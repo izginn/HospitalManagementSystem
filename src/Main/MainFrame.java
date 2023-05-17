@@ -1,9 +1,13 @@
 package Main;
 
 import java.awt.EventQueue;
-import com.toedter.calendar.JDateChooser;
 
+import Class.Doctor;
+import Class.EmergencyPatient;
 import Class.Member;
+import Class.Patient;
+import Class.Personel;
+import Class.Policlinic;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -19,10 +23,16 @@ import javax.swing.JOptionPane;
 import javax.swing.JMenu;
 import javax.swing.JLabel;
 import java.awt.Font;
+import java.awt.TextField;
+import java.time.*;
+
 import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
 import java.awt.Color;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.border.EtchedBorder;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
@@ -36,10 +46,14 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Iterator;
 import java.awt.event.ActionEvent;
 import java.awt.Window.Type;
 import javax.swing.border.CompoundBorder;
@@ -55,12 +69,12 @@ import java.awt.event.MouseEvent;
 public class MainFrame extends JFrame {
 
 	private JPanel contentPane;
-	private JDateChooser dcRSALTarih;
 	private ButtonGroup bg = new ButtonGroup();
 	private ButtonGroup bg2 = new ButtonGroup();
-	private ArrayList<Member> ii = new ArrayList<Member>();
+	private ArrayList<Member> member = new ArrayList<Member>();
+	private ArrayList<Policlinic> policlinic = new ArrayList<Policlinic>();
 	private JTextField txtRSALHastaTc;
-	private JTextField textField;
+	private JTextField txtHKArama;
 	private JTextField txtAShastaAdi;
 	private JTextField txtASsuur;
 	private JTextField txtASates;
@@ -74,49 +88,45 @@ public class MainFrame extends JFrame {
 	private Statement s;
 	private JTextField txtgirisTc;
 	private JPasswordField txtGirisPassword;
-	private JTextField textField_6;
-	private JTextField textField_7;
-	private JTextField textField_8;
-	private JTextField textField_9;
-	private JTextField textField_10;
-	private JTextField textField_11;
-	private JTextField textField_12;
-	private JTextField textField_13;
-	private JTextField textField_14;
-	private JTextField textField_15;
-	private JTextField textField_16;
-	private JTextField textField_17;
-	private JTextField textField_18;
-	private JTextField textField_1;
-	private JTextField textField_20;
-	private JTextField textField_21;
-	private JTextField textField_22;
-	private JTextField textField_23;
-	private JTextField textField_24;
-	private JTextField textField_25;
-	private JTextField textField_26;
-	private JTextField textField_27;
-	private JTextField textField_28;
-	private JTextField textField_29;
+	private JTextField txtHKAdSoyad;
+	private JTextField txtHKTc;
+	private JTextField txtHKDogYer;
+	private JTextField txtHKTelNo;
+	private JTextField txtHKSicilNo;
+	private JTextField txtHKRefAdi;
+	private JTextField txtHKYakinlik;
+	private JTextField txtHKBoy;
+	private JTextField txtHKKilo;
+	private JTextField txtHKEkg;
+	private JTextField txtdkAd;
+	private JTextField txtDkTc;
+	private JTextField txtDkDogYıl;
+	private JTextField txtDkDogYer;
+	private JTextField txtDkAlan;
+	private JTextField txtDkTel;
+	private JTextField txtDkMail;
+	private JTextField txtDkTopIzin;
+	private JTextField txtdkCalsaati;
 	private JTextField textField_30;
 	private JTextField textField_19;
-	private JTextField textField_31;
-	private JTextField textField_32;
-	private JTextField textField_33;
-	private JTextField textField_34;
-	private JTextField textField_35;
-	private JTextField textField_36;
-	private JTextField textField_37;
-	private JTextField textField_38;
-	private JTextField textField_39;
-	private JTextField textField_40;
+	private JTextField txtPkAd;
+	private JTextField txtPkTc;
+	private JTextField txtPkDogYil;
+	private JTextField txtPkDogYer;
+	private JTextField txtPkTel;
+	private JTextField txtPkMail;
+	private JTextField txtPkToplamIzin;
+	private JTextField txtPkCalSaati;
 	private JTextField textField_3;
-
+	private JTextField txtHkSonGun;
+	private JTextField txtHkDogTar;
+//DB Connection Start
 	public void getConnection() throws ClassNotFoundException, SQLException {		
 		c = DriverManager.getConnection("jdbc:postgresql://localhost:5432/DbHospitalManagementSystem", "postgres", "bdroomay6715");
 		s = c.createStatement();
 		System.out.println("Opened database successfully");
 	}
+//DB Connection End
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -129,8 +139,40 @@ public class MainFrame extends JFrame {
 			}
 		});
 	}
+	
+	public void searchNodeRecursive(DefaultMutableTreeNode node, String searchQuery) {
+	    // Düğüm adını arama sorgusuyla karşılaştır
+	    if (node.toString().equalsIgnoreCase(searchQuery)) {
+	        System.out.println("Eşleşen düğüm bulundu: " + node.toString());
+	    }
+
+	    // Alt düğümleri kontrol etmek için döngü kullan
+	    int childCount = node.getChildCount();
+	    for (int i = 0; i < childCount; i++) {
+	        DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
+	        searchNodeRecursive(childNode, searchQuery);
+	    }
+	}
+
+	public void searchNode(JTree tree, String searchQuery) {
+	    DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+	    searchNodeRecursive(rootNode, searchQuery);
+	}
+
+    private static DefaultMutableTreeNode findOrCreateFolder(DefaultMutableTreeNode parent, String folderName) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
+            if (child.getUserObject().equals(folderName)) {
+                return child;
+            }
+        }
+        DefaultMutableTreeNode newFolder = new DefaultMutableTreeNode(folderName);
+        parent.add(newFolder);
+        return newFolder;
+    }
 
 	public MainFrame() {
+
 		setBackground(new Color(196, 196, 196));
 		setFont(new Font("Dialog", Font.PLAIN, 9));
 		setIconImage(Toolkit.getDefaultToolkit().getImage("C:\\EclipseProje\\HospitalManagementSystem\\icons\\icon.png"));
@@ -188,6 +230,1245 @@ public class MainFrame extends JFrame {
 		txtGirisPassword.setBounds(232, 192, 240, 20);
 		GirisPanel.add(txtGirisPassword);
 		
+		//Hasta Kayit Panel Start
+		JPanel HastaKayitPanel = new JPanel();
+		tabbedPane.addTab("Hasta Kayıt", null, HastaKayitPanel, null);
+		HastaKayitPanel.setLayout(null);
+		
+		JPanel panel_8 = new JPanel();
+		panel_8.setBounds(0, 0, 188, 376);
+		HastaKayitPanel.add(panel_8);
+		panel_8.setLayout(null);
+
+
+		
+		txtHKArama = new JTextField();
+		txtHKArama.setToolTipText("");
+		txtHKArama.setColumns(10);
+		txtHKArama.setBounds(0, 0, 101, 21);
+		panel_8.add(txtHKArama);
+		//Jtree Patient
+		try {
+            // SQL sorgusu
+	    	String sql="SELECT \"Ad\",\"Tc\",\"PolId\" FROM PUBLIC.\"Patient\"";
+
+            // Sorguyu çalıştırma
+            ResultSet resultSet = s.executeQuery(sql);
+
+            // JTree kök düğümü
+            DefaultMutableTreeNode root = new DefaultMutableTreeNode("Hastalar");
+
+            // Verileri JTree'e ekleme
+            while (resultSet.next()) {
+            	String Tc= resultSet.getString("Tc");
+                int PolId = resultSet.getInt("PolId");
+                String ad = resultSet.getString("Ad");
+             // Veriyi ilgili klasöre yerleştirme
+                DefaultMutableTreeNode klasorNode;
+                switch (PolId) {
+                    case 1:
+                        klasorNode = findOrCreateFolder(root, "Fiziksel Tıp ve Rahabilitasyon");
+                        break;
+                    case 2:
+                        klasorNode = findOrCreateFolder(root, "Kalp ve Damar Cerrahisi");
+                        break;
+                    case 3:
+                        klasorNode = findOrCreateFolder(root,"Kardiyoloji");
+                        break;
+                    case 4:
+                        klasorNode = findOrCreateFolder(root, "Kulak Burun Boğaz");
+                        break;
+                    case 5:
+                        klasorNode = findOrCreateFolder(root, "Radyoloji");
+                        break;
+                    case 6:
+                        klasorNode = findOrCreateFolder(root, "Üroloji");
+                        break;
+                    case 7:
+                        klasorNode = findOrCreateFolder(root, "Beyin ve Sinir Cerrahisi");
+                        break;
+                    case 8:
+                        klasorNode = findOrCreateFolder(root, "Gastroenteroloji");
+                        break;
+                    case 9:
+                        klasorNode = findOrCreateFolder(root, "Genel Cerrahi");
+                        break;
+                    case 10:
+                        klasorNode = findOrCreateFolder(root, "Göz Hastalıkları");
+                        break;
+                    case 11:
+                        klasorNode = findOrCreateFolder(root, "Psikiyatri");
+                        break;
+                    default:
+                        continue;
+                }
+
+                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
+                klasorNode.add(veriNode);
+            }
+
+            // JTree'i oluşturma ve gösterme
+       		JTree tree_1_2 = new JTree(root);
+    		tree_1_2.setBounds(0, 22, 188, 355);						
+    		panel_8.add(tree_1_2);
+    		
+    		JButton btnHKAra = new JButton("Ara");
+    		btnHKAra.setBounds(102, 0, 86, 20);
+    		panel_8.add(btnHKAra);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+       	
+		//Jtree Patient end
+
+		JPanel panel = new JPanel();
+		panel.setBounds(198, 0, 835, 376);
+		HastaKayitPanel.add(panel);
+		panel.setLayout(null);
+		
+		JPanel panel_5 = new JPanel();
+		panel_5.setLayout(null);
+		panel_5.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Kimlik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5.setBounds(0, 0, 270, 167);
+		panel.add(panel_5);
+		
+		JLabel lblNewLabel = new JLabel("Ad Soyad");
+		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblNewLabel.setBounds(10, 25, 124, 14);
+		panel_5.add(lblNewLabel);
+		
+		JLabel lblTcKimlik = new JLabel("T.C. Kimlik Numarası");
+		lblTcKimlik.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTcKimlik.setBounds(10, 50, 124, 14);
+		panel_5.add(lblTcKimlik);
+		
+		JLabel lblDoumTarihi = new JLabel("Doğum Yılı");
+		lblDoumTarihi.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumTarihi.setBounds(10, 75, 124, 17);
+		panel_5.add(lblDoumTarihi);
+		
+		JLabel lblDoumYeri = new JLabel("Doğum Yeri");
+		lblDoumYeri.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumYeri.setBounds(10, 100, 124, 15);
+		panel_5.add(lblDoumYeri);
+		
+		JLabel lblCinsiyeti = new JLabel("Cinsiyeti");
+		lblCinsiyeti.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblCinsiyeti.setBounds(10, 125, 124, 14);
+		panel_5.add(lblCinsiyeti);
+		
+		JComboBox cboxHKCinsiyet = new JComboBox();
+		cboxHKCinsiyet.setModel(new DefaultComboBoxModel(new String[] {"Erkek", "Kadın"}));
+		cboxHKCinsiyet.setBounds(144, 125, 106, 22);
+		panel_5.add(cboxHKCinsiyet);
+		
+		txtHKAdSoyad = new JTextField();
+		txtHKAdSoyad.setColumns(10);
+		txtHKAdSoyad.setBounds(144, 23, 106, 20);
+		panel_5.add(txtHKAdSoyad);
+		
+		txtHKTc = new JTextField();
+		txtHKTc.setColumns(10);
+		txtHKTc.setBounds(144, 50, 106, 20);
+		panel_5.add(txtHKTc);
+		
+		txtHKDogYer = new JTextField();
+		txtHKDogYer.setColumns(10);
+		txtHKDogYer.setBounds(144, 100, 106, 20);
+		panel_5.add(txtHKDogYer);
+		
+		txtHkDogTar = new JTextField();
+		txtHkDogTar.setColumns(10);
+		txtHkDogTar.setBounds(144, 74, 106, 20);
+		panel_5.add(txtHkDogTar);
+		
+		JPanel panel_5_1 = new JPanel();
+		panel_5_1.setLayout(null);
+		panel_5_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130leti\u015Fim Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_1.setBounds(270, 0, 270, 167);
+		panel.add(panel_5_1);
+		
+		JLabel lblAdres = new JLabel("Adres");
+		lblAdres.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblAdres.setBounds(10, 25, 124, 14);
+		panel_5_1.add(lblAdres);
+		
+		JLabel lblTelefonNumaras = new JLabel("Telefon No");
+		lblTelefonNumaras.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTelefonNumaras.setBounds(10, 125, 85, 22);
+		panel_5_1.add(lblTelefonNumaras);
+		
+		txtHKTelNo = new JTextField();
+		txtHKTelNo.setColumns(10);
+		txtHKTelNo.setBounds(105, 125, 145, 20);
+		panel_5_1.add(txtHKTelNo);
+		
+		JTextArea txthkAdres = new JTextArea();
+		txthkAdres.setBounds(105, 26, 145, 88);
+		panel_5_1.add(txthkAdres);
+		
+		JPanel panel_5_2 = new JPanel();
+		panel_5_2.setLayout(null);
+		panel_5_2.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Hasta Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_2.setBounds(539, 0, 270, 167);
+		panel.add(panel_5_2);
+		
+		JLabel lblSigortaTr = new JLabel("Sigorta Türü");
+		lblSigortaTr.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblSigortaTr.setBounds(10, 25, 124, 17);
+		panel_5_2.add(lblSigortaTr);
+		
+		JLabel lblSicilNo = new JLabel("Sicil No");
+		lblSicilNo.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblSicilNo.setBounds(10, 50, 124, 14);
+		panel_5_2.add(lblSicilNo);
+		
+		txtHKSicilNo = new JTextField();
+		txtHKSicilNo.setColumns(10);
+		txtHKSicilNo.setBounds(144, 50, 106, 20);
+		panel_5_2.add(txtHKSicilNo);
+		
+		JComboBox cboxHKSigTur = new JComboBox();
+		cboxHKSigTur.setModel(new DefaultComboBoxModel(new String[] {"Sgk", "Bagkur"}));
+		cboxHKSigTur.setBounds(144, 22, 106, 22);
+		panel_5_2.add(cboxHKSigTur);
+		
+		JLabel lblRefakatBilgileri = new JLabel("Refakatçı Adı");
+		lblRefakatBilgileri.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblRefakatBilgileri.setBounds(10, 75, 124, 14);
+		panel_5_2.add(lblRefakatBilgileri);
+		
+		txtHKRefAdi = new JTextField();
+		txtHKRefAdi.setColumns(10);
+		txtHKRefAdi.setBounds(144, 75, 106, 20);
+		panel_5_2.add(txtHKRefAdi);
+		
+		JLabel lblHKRefDerece = new JLabel("Yakınlık Derecesi");
+		lblHKRefDerece.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblHKRefDerece.setBounds(10, 103, 124, 14);
+		panel_5_2.add(lblHKRefDerece);
+		
+		txtHKYakinlik = new JTextField();
+		txtHKYakinlik.setColumns(10);
+		txtHKYakinlik.setBounds(144, 101, 106, 20);
+		panel_5_2.add(txtHKYakinlik);
+		
+		JLabel lblPolikinlik = new JLabel("Polikinlik");
+		lblPolikinlik.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblPolikinlik.setBounds(10, 128, 106, 22);
+		panel_5_2.add(lblPolikinlik);
+		
+		JComboBox cboxHKPol = new JComboBox();
+		cboxHKPol.setModel(new DefaultComboBoxModel(new String[] {"Fiziksel Tıp ve Rehabilitasyon", "Kalp ve Damar Cerrahisi", "Kardiyoloji", "Kulak Burun Boğaz", "Radyoloji", "Üroloji", "Beyin ve Sinir Cerrahisi", "Gastroenteroloji", "Genel Cerrahi", "Göz Hastalıkları", "Psikiyatri"}));
+		cboxHKPol.setBounds(144, 129, 106, 22);
+		panel_5_2.add(cboxHKPol);
+		
+		JPanel panel_5_3 = new JPanel();
+		panel_5_3.setLayout(null);
+		panel_5_3.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Hastal\u0131k Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_3.setBounds(0, 167, 815, 160);
+		panel.add(panel_5_3);
+		
+		JLabel lblBoy = new JLabel("Boy");
+		lblBoy.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblBoy.setBounds(10, 25, 124, 14);
+		panel_5_3.add(lblBoy);
+		
+		txtHKBoy = new JTextField();
+		txtHKBoy.setColumns(10);
+		txtHKBoy.setBounds(144, 23, 106, 20);
+		panel_5_3.add(txtHKBoy);
+		
+		JLabel lblKilo = new JLabel("Kilo");
+		lblKilo.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblKilo.setBounds(10, 60, 124, 14);
+		panel_5_3.add(lblKilo);
+		
+		txtHKKilo = new JTextField();
+		txtHKKilo.setColumns(10);
+		txtHKKilo.setBounds(144, 58, 106, 20);
+		panel_5_3.add(txtHKKilo);
+		
+		JLabel lblEkg = new JLabel("Kan Grubu");
+		lblEkg.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblEkg.setBounds(10, 93, 124, 14);
+		panel_5_3.add(lblEkg);
+		
+		JLabel lblSonGncelleme = new JLabel("Son Güncelleme");
+		lblSonGncelleme.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblSonGncelleme.setBounds(553, 25, 124, 14);
+		panel_5_3.add(lblSonGncelleme);
+		
+		JLabel lblEkg_1 = new JLabel("EKG");
+		lblEkg_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblEkg_1.setBounds(10, 125, 124, 14);
+		panel_5_3.add(lblEkg_1);
+		
+		txtHKEkg = new JTextField();
+		txtHKEkg.setColumns(10);
+		txtHKEkg.setBounds(144, 125, 106, 20);
+		panel_5_3.add(txtHKEkg);
+		
+		JLabel lblHKGecmisHastalklar = new JLabel("Geçmiş Hastalıklar");
+		lblHKGecmisHastalklar.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblHKGecmisHastalklar.setBounds(553, 70, 124, 14);
+		panel_5_3.add(lblHKGecmisHastalklar);
+		
+		JTextArea txtHKHastaliklar = new JTextArea();
+		txtHKHastaliklar.setBounds(553, 94, 240, 45);
+		panel_5_3.add(txtHKHastaliklar);
+		
+		JComboBox cboxHKKanGrub = new JComboBox();
+		cboxHKKanGrub.setModel(new DefaultComboBoxModel(new String[] {"A+", "A-", "B+", "B-", "AB+", "AB-", "0+", "0-"}));
+		cboxHKKanGrub.setBounds(144, 89, 106, 22);
+		panel_5_3.add(cboxHKKanGrub);
+		
+		JLabel lblKullandIlalar = new JLabel("Kullandığı İlaçlar");
+		lblKullandIlalar.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblKullandIlalar.setBounds(284, 70, 124, 17);
+		panel_5_3.add(lblKullandIlalar);
+		
+		JTextArea txtHKilaclar = new JTextArea();
+		txtHKilaclar.setBounds(284, 94, 240, 45);
+		panel_5_3.add(txtHKilaclar);
+		
+		txtHkSonGun = new JTextField();
+		txtHkSonGun.setEditable(false);
+		txtHkSonGun.setEnabled(false);
+		txtHkSonGun.setColumns(10);
+		txtHkSonGun.setBounds(687, 23, 106, 20);
+		panel_5_3.add(txtHkSonGun);
+		
+		JLabel lblTedaviekli = new JLabel("Tedavi Şekli");
+		lblTedaviekli.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTedaviekli.setBounds(284, 26, 124, 14);
+		panel_5_3.add(lblTedaviekli);
+		
+		JComboBox cboxHKTedaviSekli = new JComboBox();
+		cboxHKTedaviSekli.setModel(new DefaultComboBoxModel(new String[] {"Ayakta", "Yatarak"}));
+		cboxHKTedaviSekli.setBounds(418, 22, 106, 22);
+		panel_5_3.add(cboxHKTedaviSekli);
+		
+		JButton btnHKSil = new JButton("Sil");
+		btnHKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnHKSil.setBounds(524, 338, 123, 27);
+		panel.add(btnHKSil);
+		
+		JButton btnGuncelleHasta = new JButton("Güncelle");
+		btnGuncelleHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnGuncelleHasta.setBounds(356, 338, 123, 27);
+		panel.add(btnGuncelleHasta);
+		//Hasta Kayıt Action Start
+		JButton btnKaydetHasta = new JButton("Kaydet");
+		btnKaydetHasta.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				LocalDate dd=LocalDate.now();
+				Patient p = new Patient();
+				p.Ad=txtHKAdSoyad.getText();
+				p.Tc=txtHKTc.getText();
+				p.DogYeri=txtHKDogYer.getText();
+				p.DogTar=Integer.parseInt(txtHkDogTar.getText());
+				p.Cinsiyet = cboxHKCinsiyet.getSelectedItem().toString();
+				p.Adres=txthkAdres.getText();
+				p.Telefon=txtHKTelNo.getText();
+				p.Boy= Integer.parseInt(txtHKBoy.getText());
+				p.Kilo = Integer.parseInt(txtHKKilo.getText());
+				p.KanGrubu = (String) cboxHKKanGrub.getSelectedItem();
+				p.Ekg=txtHKEkg.getText();
+				p.TedaviSekli= (String) cboxHKTedaviSekli.getSelectedItem();
+				p.SonGuncelleme=dd;
+				p.KullanilanIlac=txtHKilaclar.getText();
+				p.GecmisHastalik=txtHKHastaliklar.getText();
+				p.SicilNo=txtHKSicilNo.getText();
+				p.SigortaTuru= (String) cboxHKSigTur.getSelectedItem();
+				p.RefAdi=txtHKRefAdi.getText();
+				p.RefYakinlik=txtHKYakinlik.getText();
+				p.PolId= cboxHKPol.getSelectedIndex()+1;
+				
+				try {
+					String sql1 = "INSERT INTO public.\"Patient\"(\"Ad\", \"Tc\", \"DogTar\", \"DogYer\", \"Cinsiyet\", \"Adres\", \"Telefon\", \"SigortaTuru\", \"SicilNo\", \"RefAdi\", \"RefYakinlik\",\"Boy\", \"Kilo\", \"KanGrubu\", \"Ekg\", \"TedaviSekli\", \"KullanilanIlac\", \"SonGuncelleme\", \"GecmisHastalik\", \"PolId\") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+					PreparedStatement prep =c.prepareStatement(sql1);
+					prep.setString(1,p.Ad);
+					prep.setString(2,p.Tc);
+					prep.setInt(3, p.DogTar);
+					prep.setString(4, p.DogYeri);
+					prep.setString(5, p.Cinsiyet);
+					prep.setString(6, p.Adres);
+					prep.setString(7, p.Telefon);
+					prep.setString(8, p.SigortaTuru);
+					prep.setString(9, p.SicilNo);
+					prep.setString(10, p.RefAdi);
+					prep.setString(11, p.RefYakinlik);
+					prep.setInt(12, p.Boy);
+					prep.setInt(13, p.Kilo);
+					prep.setString(14, p.KanGrubu);
+					prep.setString(15, p.Ekg);
+					prep.setString(16, p.TedaviSekli);
+					prep.setString(17, p.KullanilanIlac);
+					prep.setObject(18, dd);
+					prep.setString(19, p.GecmisHastalik);
+					prep.setInt(20, p.PolId);
+					int den=prep.executeUpdate();
+					if (den==1) {
+						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+					}
+				} catch (SQLException e3) {
+					// TODO Auto-generated catch block
+					e3.printStackTrace();
+				}
+			}
+		});
+
+		//Hasta Kayıt Action End
+		btnKaydetHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnKaydetHasta.setBounds(181, 338, 123, 27);
+		panel.add(btnKaydetHasta);
+		//Hasta Kayit Panel End
+		//Acil Servis Panel Start
+		
+		JPanel AcilServisPanel = new JPanel();
+		tabbedPane.addTab("Acil Servis", null, AcilServisPanel, null);
+		AcilServisPanel.setLayout(null);
+		
+		JPanel panel_2_1_1 = new JPanel();
+		panel_2_1_1.setLayout(null);
+		panel_2_1_1.setBounds(194, 0, 806, 376);
+		AcilServisPanel.add(panel_2_1_1);
+		
+		JPanel panel_5_4_1_2 = new JPanel();
+		panel_5_4_1_2.setLayout(null);
+		panel_5_4_1_2.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
+		panel_5_4_1_2.setBounds(0, 0, 270, 246);
+		panel_2_1_1.add(panel_5_4_1_2);
+		
+		JLabel lblNewLabel_1_1_3 = new JLabel("Hasta Adı");
+		lblNewLabel_1_1_3.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblNewLabel_1_1_3.setBounds(24, 11, 81, 14);
+		panel_5_4_1_2.add(lblNewLabel_1_1_3);
+		
+		txtAShastaAdi = new JTextField();
+		txtAShastaAdi.setBounds(115, 11, 130, 20);
+		panel_5_4_1_2.add(txtAShastaAdi);
+		txtAShastaAdi.setColumns(10);
+		
+		JLabel lblDoumYeri_1_1_3_3_1 = new JLabel("Şuur");
+		lblDoumYeri_1_1_3_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_3_3_1.setBounds(24, 140, 81, 22);
+		panel_5_4_1_2.add(lblDoumYeri_1_1_3_3_1);
+		
+		txtASsuur = new JTextField();
+		txtASsuur.setColumns(10);
+		txtASsuur.setBounds(115, 140, 130, 20);
+		panel_5_4_1_2.add(txtASsuur);
+		
+		JLabel lblDoumYeri_1_1_3_3_1_1 = new JLabel("Ateş");
+		lblDoumYeri_1_1_3_3_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_3_3_1_1.setBounds(24, 185, 81, 22);
+		panel_5_4_1_2.add(lblDoumYeri_1_1_3_3_1_1);
+		
+		txtASates = new JTextField();
+		txtASates.setColumns(10);
+		txtASates.setBounds(115, 186, 130, 20);
+		panel_5_4_1_2.add(txtASates);
+		
+		JLabel lblNewLabel_1_1_3_1 = new JLabel("Hasta Tc");
+		lblNewLabel_1_1_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblNewLabel_1_1_3_1.setBounds(24, 54, 81, 14);
+		panel_5_4_1_2.add(lblNewLabel_1_1_3_1);
+		
+		txtAStc = new JTextField();
+		txtAStc.setColumns(10);
+		txtAStc.setBounds(115, 54, 130, 20);
+		panel_5_4_1_2.add(txtAStc);
+		
+		JLabel lblRenkId = new JLabel("Acil Seviyesi");
+		lblRenkId.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblRenkId.setBounds(24, 97, 81, 14);
+		panel_5_4_1_2.add(lblRenkId);
+		
+		JComboBox cboxASRenkId = new JComboBox();
+		cboxASRenkId.setModel(new DefaultComboBoxModel(new String[] {"Kırmızı", "Sarı", "Yeşil"}));
+		cboxASRenkId.setBounds(115, 97, 130, 22);
+		panel_5_4_1_2.add(cboxASRenkId);
+		
+		JPanel panel_5_4_1_2_1 = new JPanel();
+		panel_5_4_1_2_1.setLayout(null);
+		panel_5_4_1_2_1.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
+		panel_5_4_1_2_1.setBounds(270, 0, 270, 246);
+		panel_2_1_1.add(panel_5_4_1_2_1);
+		
+		JTextArea txtASgecmis = new JTextArea();
+		txtASgecmis.setBounds(10, 141, 227, 70);
+		panel_5_4_1_2_1.add(txtASgecmis);
+		
+		JLabel lblDoumYeri_1_1_3_3 = new JLabel("Hastalık / Ameliyat Geçmişi");
+		lblDoumYeri_1_1_3_3.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_3_3.setBounds(10, 108, 242, 22);
+		panel_5_4_1_2_1.add(lblDoumYeri_1_1_3_3);
+		
+		txtASekg = new JTextField();
+		txtASekg.setBounds(107, 51, 130, 20);
+		panel_5_4_1_2_1.add(txtASekg);
+		txtASekg.setColumns(10);
+		
+		JLabel lblDoumYeri_1_1_3_3_1_3 = new JLabel("EKG");
+		lblDoumYeri_1_1_3_3_1_3.setBounds(16, 51, 81, 22);
+		panel_5_4_1_2_1.add(lblDoumYeri_1_1_3_3_1_3);
+		lblDoumYeri_1_1_3_3_1_3.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		
+		JLabel lblDoumYeri_1_1_3_3_1_2 = new JLabel("Nabız");
+		lblDoumYeri_1_1_3_3_1_2.setBounds(16, 11, 81, 22);
+		panel_5_4_1_2_1.add(lblDoumYeri_1_1_3_3_1_2);
+		lblDoumYeri_1_1_3_3_1_2.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		
+		txtASnabiz = new JTextField();
+		txtASnabiz.setBounds(107, 11, 130, 20);
+		panel_5_4_1_2_1.add(txtASnabiz);
+		txtASnabiz.setColumns(10);
+		
+		JPanel panel_5_4_1_2_2 = new JPanel();
+		panel_5_4_1_2_2.setLayout(null);
+		panel_5_4_1_2_2.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
+		panel_5_4_1_2_2.setBounds(545, 0, 251, 246);
+		panel_2_1_1.add(panel_5_4_1_2_2);
+		
+		JTextArea txtAStani = new JTextArea();
+		txtAStani.setBounds(10, 145, 227, 70);
+		panel_5_4_1_2_2.add(txtAStani);
+		
+		JLabel lblDoumYeri_1_1_3_2_1 = new JLabel("İlk Tanı");
+		lblDoumYeri_1_1_3_2_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_3_2_1.setBounds(10, 112, 124, 22);
+		panel_5_4_1_2_2.add(lblDoumYeri_1_1_3_2_1);
+		
+		JTextArea txtASilac = new JTextArea();
+		txtASilac.setBounds(10, 41, 227, 60);
+		panel_5_4_1_2_2.add(txtASilac);
+		
+		JLabel lblDoumYeri_1_1_3_1 = new JLabel("Kullandığı İlcaçlar");
+		lblDoumYeri_1_1_3_1.setBounds(10, 11, 124, 22);
+		panel_5_4_1_2_2.add(lblDoumYeri_1_1_3_1);
+		lblDoumYeri_1_1_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		//Acil Servis Kaydet Start
+		JButton btnASKaydet = new JButton("Kaydet");
+		btnASKaydet.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				EmergencyPatient ep = new EmergencyPatient();
+				ep.Adi=txtAShastaAdi.getText();
+				ep.Ates=Float.parseFloat(txtASates.getText());
+				ep.Ekg=txtASekg.getText();
+				ep.HastaGecmisi=txtASgecmis.getText();
+				ep.KullanilanIlac=txtASilac.getText();
+				ep.Nabiz=Integer.parseInt(txtASnabiz.getText());
+				ep.OnTani=txtAStani.getText();
+				ep.RenkId=cboxASRenkId.getSelectedIndex()+1;
+				ep.Suur=txtASsuur.getText();
+				ep.Tc=txtAStc.getText();
+				
+				try {
+					String sql1 = "INSERT INTO public.\"EmergencyPatient\"(\"Adi\", \"Tc\", \"RenkId\", \"Suur\", \"Ates\", \"Nabiz\", \"Ekg\", \"HastaGecmisi\", \"KullanilanIlac\", \"OnTani\") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+					PreparedStatement prep =c.prepareStatement(sql1);
+					prep.setString(1,ep.Adi);
+					prep.setString(2,ep.Tc);
+					prep.setInt(3, ep.RenkId);
+					prep.setString(4, ep.Suur);
+					prep.setFloat(5, ep.Ates);
+					prep.setInt(6, ep.Nabiz);
+					prep.setString(7, ep.Ekg);
+					prep.setString(8, ep.HastaGecmisi);
+					prep.setString(9, ep.KullanilanIlac);
+					prep.setString(10, ep.OnTani);
+				
+					int den=prep.executeUpdate();
+					if (den==1) {
+						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+					}
+				} catch (SQLException e3) {
+					// TODO Auto-generated catch block
+					e3.printStackTrace();
+				}
+			}
+		});
+		
+		btnASKaydet.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnASKaydet.setBounds(193, 307, 123, 27);
+		panel_2_1_1.add(btnASKaydet);
+		//Acil Servis Kaydet End
+		JButton btnASGuncelle = new JButton("Güncelle");
+		btnASGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnASGuncelle.setBounds(352, 307, 123, 27);
+		panel_2_1_1.add(btnASGuncelle);
+		
+		JButton btnSil = new JButton("Sil");
+		btnSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnSil.setBounds(513, 307, 123, 27);
+		panel_2_1_1.add(btnSil);
+		
+		JPanel panel_8_4_1 = new JPanel();
+		panel_8_4_1.setLayout(null);
+		panel_8_4_1.setBounds(0, 0, 188, 376);
+		AcilServisPanel.add(panel_8_4_1);
+		
+		JButton btnHasAra_1_1_2_1 = new JButton("Ara");
+		btnHasAra_1_1_2_1.setBounds(102, 0, 86, 21);
+		panel_8_4_1.add(btnHasAra_1_1_2_1);
+		
+		textField_3 = new JTextField();
+		textField_3.setColumns(10);
+		textField_3.setBounds(0, 0, 101, 21);
+		panel_8_4_1.add(textField_3);
+		
+		JTree tree_1_2_2_1 = new JTree();
+		tree_1_2_2_1.setBounds(0, 22, 188, 355);
+		panel_8_4_1.add(tree_1_2_2_1);
+		
+		//Acil Servis Panel End
+		
+		//Doktor Kayit Panel Start
+		JPanel DoktorKayitPanel = new JPanel();
+		tabbedPane.addTab("Doktor Kayıt", null, DoktorKayitPanel, null);
+		DoktorKayitPanel.setLayout(null);
+		
+		JPanel panel_1 = new JPanel();
+		panel_1.setBounds(198, 0, 802, 376);
+		DoktorKayitPanel.add(panel_1);
+		panel_1.setLayout(null);
+		
+		JPanel panel_5_4 = new JPanel();
+		panel_5_4.setLayout(null);
+		panel_5_4.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Kimlik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_4.setBounds(0, 0, 270, 182);
+		panel_1.add(panel_5_4);
+		
+		JLabel lblNewLabel_1 = new JLabel("Ad Soyad");
+		lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblNewLabel_1.setBounds(10, 25, 124, 14);
+		panel_5_4.add(lblNewLabel_1);
+		
+		JLabel lblTcKimlik_1 = new JLabel("T.C. Kimlik Numarası");
+		lblTcKimlik_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTcKimlik_1.setBounds(10, 55, 124, 14);
+		panel_5_4.add(lblTcKimlik_1);
+		
+		JLabel lblDoumTarihi_1 = new JLabel("Doğum Yılı");
+		lblDoumTarihi_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumTarihi_1.setBounds(10, 85, 124, 22);
+		panel_5_4.add(lblDoumTarihi_1);
+		
+		JLabel lblDoumYeri_1 = new JLabel("Doğum Yeri");
+		lblDoumYeri_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumYeri_1.setBounds(10, 115, 124, 17);
+		panel_5_4.add(lblDoumYeri_1);
+		
+		JLabel lblCinsiyeti_1 = new JLabel("Cinsiyeti");
+		lblCinsiyeti_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblCinsiyeti_1.setBounds(10, 145, 124, 14);
+		panel_5_4.add(lblCinsiyeti_1);
+		
+		JComboBox cboxDKCinsiyet = new JComboBox();
+		cboxDKCinsiyet.setModel(new DefaultComboBoxModel(new String[] {"Erkek", "Kadın"}));
+		cboxDKCinsiyet.setBounds(144, 145, 106, 22);
+		panel_5_4.add(cboxDKCinsiyet);
+		
+		txtdkAd = new JTextField();
+		txtdkAd.setColumns(10);
+		txtdkAd.setBounds(144, 23, 106, 20);
+		panel_5_4.add(txtdkAd);
+		
+		txtDkTc = new JTextField();
+		txtDkTc.setColumns(10);
+		txtDkTc.setBounds(144, 55, 106, 20);
+		panel_5_4.add(txtDkTc);
+		
+		txtDkDogYıl = new JTextField();
+		txtDkDogYıl.setColumns(10);
+		txtDkDogYıl.setBounds(144, 85, 106, 20);
+		panel_5_4.add(txtDkDogYıl);
+		
+		txtDkDogYer = new JTextField();
+		txtDkDogYer.setColumns(10);
+		txtDkDogYer.setBounds(144, 115, 106, 20);
+		panel_5_4.add(txtDkDogYer);
+		
+		JPanel panel_5_5 = new JPanel();
+		panel_5_5.setLayout(null);
+		panel_5_5.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Akademik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_5.setBounds(270, 0, 270, 182);
+		panel_1.add(panel_5_5);
+		
+		JLabel lblDoumYeri_2 = new JLabel("Alanı");
+		lblDoumYeri_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumYeri_2.setBounds(10, 145, 124, 22);
+		panel_5_5.add(lblDoumYeri_2);
+		
+		txtDkAlan = new JTextField();
+		txtDkAlan.setColumns(10);
+		txtDkAlan.setBounds(144, 145, 106, 20);
+		panel_5_5.add(txtDkAlan);
+		
+		JLabel lblDoumYeri_2_1 = new JLabel("Polikinlik");
+		lblDoumYeri_2_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumYeri_2_1.setBounds(10, 85, 124, 22);
+		panel_5_5.add(lblDoumYeri_2_1);
+		
+		JComboBox cboxDKPol = new JComboBox();
+		cboxDKPol.setModel(new DefaultComboBoxModel(new String[] {"Fiziksel Tıp ve Rehabilitasyon", "Kalp ve Damar Cerrahisi", "Kardiyoloji", "Kulak Burun Boğaz", "Radyoloji", "Üroloji", "Beyin ve Sinir Cerrahisi", "Gastroenteroloji", "Genel Cerrahi", "Göz Hastalıkları", "Psikiyatri"}));
+		cboxDKPol.setBounds(144, 86, 106, 22);
+		panel_5_5.add(cboxDKPol);
+		
+		JLabel lblOgrSev = new JLabel("Polikinlik");
+		lblOgrSev.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblOgrSev.setBounds(10, 30, 124, 22);
+		panel_5_5.add(lblOgrSev);
+		
+		JComboBox cboxDkOgrSev = new JComboBox();
+		cboxDkOgrSev.setModel(new DefaultComboBoxModel(new String[] {"Lisans", "Yüksek Lisans", "Doktora"}));
+		cboxDkOgrSev.setBounds(144, 31, 106, 22);
+		panel_5_5.add(cboxDkOgrSev);
+		
+		JPanel panel_5_6 = new JPanel();
+		panel_5_6.setLayout(null);
+		panel_5_6.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130leti\u015Fim Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_6.setBounds(539, 0, 253, 182);
+		panel_1.add(panel_5_6);
+		
+		JLabel lblAdres_1 = new JLabel("Adres");
+		lblAdres_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblAdres_1.setBounds(10, 25, 124, 14);
+		panel_5_6.add(lblAdres_1);
+		
+		JTextArea txtDKAdres = new JTextArea();
+		txtDKAdres.setBounds(105, 25, 138, 68);
+		panel_5_6.add(txtDKAdres);
+		
+		JLabel lblTelefonNumaras_1 = new JLabel("Telefon No");
+		lblTelefonNumaras_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTelefonNumaras_1.setBounds(10, 102, 85, 22);
+		panel_5_6.add(lblTelefonNumaras_1);
+		
+		txtDkTel = new JTextField();
+		txtDkTel.setColumns(10);
+		txtDkTel.setBounds(105, 104, 138, 20);
+		panel_5_6.add(txtDkTel);
+		
+		JLabel lblTelefonNumaras_1_1 = new JLabel("E Mail");
+		lblTelefonNumaras_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTelefonNumaras_1_1.setBounds(10, 145, 85, 22);
+		panel_5_6.add(lblTelefonNumaras_1_1);
+		
+		txtDkMail = new JTextField();
+		txtDkMail.setColumns(10);
+		txtDkMail.setBounds(105, 147, 138, 20);
+		panel_5_6.add(txtDkMail);
+		
+		JPanel panel_5_3_1 = new JPanel();
+		panel_5_3_1.setLayout(null);
+		panel_5_3_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130\u015F Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_3_1.setBounds(0, 181, 792, 108);
+		panel_1.add(panel_5_3_1);
+		
+		JLabel lblizin = new JLabel("Toplam İzin Günü");
+		lblizin.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblizin.setBounds(43, 48, 137, 14);
+		panel_5_3_1.add(lblizin);
+		
+		txtDkTopIzin = new JTextField();
+		txtDkTopIzin.setColumns(10);
+		txtDkTopIzin.setBounds(191, 46, 106, 20);
+		panel_5_3_1.add(txtDkTopIzin);
+		
+		JLabel lblIzinKullan_1 = new JLabel("Çalışma Saatleri");
+		lblIzinKullan_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblIzinKullan_1.setBounds(478, 47, 100, 14);
+		panel_5_3_1.add(lblIzinKullan_1);
+		
+		txtdkCalsaati = new JTextField();
+		txtdkCalsaati.setColumns(10);
+		txtdkCalsaati.setBounds(588, 42, 106, 20);
+		panel_5_3_1.add(txtdkCalsaati);
+		
+		JButton btnKaydetDoktor = new JButton("Kaydet");
+		btnKaydetDoktor.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				Doctor d = new Doctor();
+				d.Ad=txtdkAd.getText();
+				d.Adres=txtDKAdres.getText();
+				d.Alan=(String) cboxDkOgrSev.getSelectedItem();
+				d.CalSaati=txtdkCalsaati.getText();
+				d.Cinsiyet=txtdkCalsaati.getText();
+				d.DogYer=txtDkDogYer.getText();
+				d.Mail=txtDkMail.getText();
+				d.OgrenimSeviyesi=(String)cboxDkOgrSev.getSelectedItem();
+				d.PolId=(cboxDKPol.getSelectedIndex()+1);
+				d.Tc=txtDkTc.getText();
+				d.Telefon=txtDkTel.getText();
+				d.ToplamIzin=Integer.parseInt(txtDkTopIzin.getText());
+				d.DogTar=Integer.parseInt(txtDkDogYıl.getText());
+				
+				try {
+					String sql1 = "INSERT INTO public.\"Doctor\"(\"Ad\", \"Tc\", \"DogTar\", \"DogYer\", \"Cinsiyet\", \"Adres\", \"Telefon\", \"Mail\", \"OgrenimSeviyesi\", \"Alan\", \"ToplamIzin\", \"CalSaati\", \"PolId\") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+					PreparedStatement prep =c.prepareStatement(sql1);
+					prep.setString(1,d.Ad);
+					prep.setString(2, d.Tc);
+					prep.setInt(3, d.DogTar);
+					prep.setString(4, d.DogYer);
+					prep.setString(5, d.Cinsiyet);
+					prep.setString(6, d.Adres);
+					prep.setString(7, d.Telefon);
+					prep.setString(8, d.Mail);
+					prep.setString(9, d.OgrenimSeviyesi);
+					prep.setString(10, d.Alan);
+					prep.setInt(11, d.ToplamIzin);
+					prep.setString(12, d.CalSaati);
+					prep.setInt(13, d.PolId);
+				
+					int den=prep.executeUpdate();
+					if (den==1) {
+						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+					}
+				} catch (SQLException e3) {
+					// TODO Auto-generated catch block
+					e3.printStackTrace();
+				}
+			}
+		});
+		btnKaydetDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnKaydetDoktor.setBounds(147, 321, 123, 27);
+		panel_1.add(btnKaydetDoktor);
+		
+		JButton btnGncelleDoktor = new JButton("Güncelle");
+		btnGncelleDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnGncelleDoktor.setBounds(301, 321, 123, 27);
+		panel_1.add(btnGncelleDoktor);
+		
+		JButton btnDKSil = new JButton("Sil");
+		btnDKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnDKSil.setBounds(457, 321, 123, 27);
+		panel_1.add(btnDKSil);
+		
+		JButton btnDKIzinKullan = new JButton("İzin Kullan");
+		btnDKIzinKullan.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				OffDay od = new OffDay();
+				od.setVisible(true);
+			}
+		});
+		btnDKIzinKullan.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnDKIzinKullan.setBounds(618, 321, 123, 27);
+		panel_1.add(btnDKIzinKullan);
+		
+		JPanel panel_8_1 = new JPanel();
+		panel_8_1.setLayout(null);
+		panel_8_1.setBounds(0, 0, 188, 376);
+		DoktorKayitPanel.add(panel_8_1);
+		
+		JButton btnHasAra_1_1_1 = new JButton("Ara");
+		btnHasAra_1_1_1.setBounds(102, 0, 86, 21);
+		panel_8_1.add(btnHasAra_1_1_1);
+		
+		textField_30 = new JTextField();
+		textField_30.setColumns(10);
+		textField_30.setBounds(0, 0, 101, 21);
+		panel_8_1.add(textField_30);
+		
+		JTree tree_1_2_1 = new JTree();
+		tree_1_2_1.setBounds(0, 22, 188, 355);
+		panel_8_1.add(tree_1_2_1);
+		
+		//Doktor Kayıt Panel End
+		//Personel Kayıt Panel Start
+		JPanel PersonelKayitPanel = new JPanel();
+		tabbedPane.addTab("Personel Kayıt", null, PersonelKayitPanel, null);
+		PersonelKayitPanel.setLayout(null);
+		
+		JPanel panel_3_1 = new JPanel();
+		panel_3_1.setLayout(null);
+		panel_3_1.setBounds(0, 0, 1000, 376);
+		PersonelKayitPanel.add(panel_3_1);
+		
+		JPanel panel_8_4 = new JPanel();
+		panel_8_4.setLayout(null);
+		panel_8_4.setBounds(0, 0, 188, 376);
+		panel_3_1.add(panel_8_4);
+		
+		JButton btnHasAra_1_1_2 = new JButton("Ara");
+		btnHasAra_1_1_2.setBounds(102, 0, 86, 21);
+		panel_8_4.add(btnHasAra_1_1_2);
+		
+		textField_19 = new JTextField();
+		textField_19.setColumns(10);
+		textField_19.setBounds(0, 0, 101, 21);
+		panel_8_4.add(textField_19);
+		
+		JTree tree_1_2_2 = new JTree();
+		tree_1_2_2.setBounds(0, 22, 188, 355);
+		panel_8_4.add(tree_1_2_2);
+		
+		JPanel panel_3 = new JPanel();
+		panel_3.setBounds(198, 0, 802, 376);
+		panel_3_1.add(panel_3);
+		panel_3.setLayout(null);
+		
+		JPanel panel_5_4_2 = new JPanel();
+		panel_5_4_2.setLayout(null);
+		panel_5_4_2.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Kimlik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_4_2.setBounds(0, 0, 407, 182);
+		panel_3.add(panel_5_4_2);
+		
+		JLabel lblNewLabel_1_2 = new JLabel("Ad Soyad");
+		lblNewLabel_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblNewLabel_1_2.setBounds(10, 25, 124, 14);
+		panel_5_4_2.add(lblNewLabel_1_2);
+		
+		JLabel lblTcKimlik_1_2 = new JLabel("T.C. Kimlik Numarası");
+		lblTcKimlik_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTcKimlik_1_2.setBounds(10, 55, 124, 14);
+		panel_5_4_2.add(lblTcKimlik_1_2);
+		
+		JLabel lblDoumTarihi_1_2 = new JLabel("Doğum Yılı");
+		lblDoumTarihi_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumTarihi_1_2.setBounds(10, 85, 124, 22);
+		panel_5_4_2.add(lblDoumTarihi_1_2);
+		
+		JLabel lblDoumYeri_1_2 = new JLabel("Doğum Yeri");
+		lblDoumYeri_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblDoumYeri_1_2.setBounds(10, 115, 124, 17);
+		panel_5_4_2.add(lblDoumYeri_1_2);
+		
+		JLabel lblCinsiyeti_1_1 = new JLabel("Cinsiyeti");
+		lblCinsiyeti_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblCinsiyeti_1_1.setBounds(10, 145, 124, 14);
+		panel_5_4_2.add(lblCinsiyeti_1_1);
+		
+		JComboBox cboxPKCinsiyet = new JComboBox();
+		cboxPKCinsiyet.setModel(new DefaultComboBoxModel(new String[] {"Erkek", "Kadın"}));
+		cboxPKCinsiyet.setBounds(144, 145, 179, 22);
+		panel_5_4_2.add(cboxPKCinsiyet);
+		
+		txtPkAd = new JTextField();
+		txtPkAd.setColumns(10);
+		txtPkAd.setBounds(144, 23, 179, 20);
+		panel_5_4_2.add(txtPkAd);
+		
+		txtPkTc = new JTextField();
+		txtPkTc.setColumns(10);
+		txtPkTc.setBounds(144, 55, 179, 20);
+		panel_5_4_2.add(txtPkTc);
+		
+		txtPkDogYil = new JTextField();
+		txtPkDogYil.setColumns(10);
+		txtPkDogYil.setBounds(144, 85, 179, 20);
+		panel_5_4_2.add(txtPkDogYil);
+		
+		txtPkDogYer = new JTextField();
+		txtPkDogYer.setColumns(10);
+		txtPkDogYer.setBounds(144, 115, 179, 20);
+		panel_5_4_2.add(txtPkDogYer);
+		
+		JPanel panel_5_6_1 = new JPanel();
+		panel_5_6_1.setLayout(null);
+		panel_5_6_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130leti\u015Fim Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_6_1.setBounds(405, 0, 390, 182);
+		panel_3.add(panel_5_6_1);
+		
+		JLabel lblAdres_1_1 = new JLabel("Adres");
+		lblAdres_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblAdres_1_1.setBounds(10, 25, 124, 14);
+		panel_5_6_1.add(lblAdres_1_1);
+		
+		JTextArea txtPKAdres = new JTextArea();
+		txtPKAdres.setBounds(105, 25, 179, 68);
+		panel_5_6_1.add(txtPKAdres);
+		
+		JLabel lblTelefonNumaras_1_2 = new JLabel("Telefon No");
+		lblTelefonNumaras_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTelefonNumaras_1_2.setBounds(10, 102, 85, 22);
+		panel_5_6_1.add(lblTelefonNumaras_1_2);
+		
+		txtPkTel = new JTextField();
+		txtPkTel.setColumns(10);
+		txtPkTel.setBounds(105, 104, 179, 20);
+		panel_5_6_1.add(txtPkTel);
+		
+		JButton btnPKGuncelle = new JButton("Güncelle");
+		btnPKGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnPKGuncelle.setBounds(311, 317, 123, 27);
+		panel_3.add(btnPKGuncelle);
+		
+		JPanel panel_5_3_1_1 = new JPanel();
+		panel_5_3_1_1.setLayout(null);
+		panel_5_3_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130\u015F Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_3_1_1.setBounds(0, 182, 792, 109);
+		panel_3.add(panel_5_3_1_1);
+		
+		JLabel lblizin_1 = new JLabel("Toplam İzin Günü");
+		lblizin_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblizin_1.setBounds(10, 43, 137, 14);
+		panel_5_3_1_1.add(lblizin_1);
+		
+		txtPkToplamIzin = new JTextField();
+		txtPkToplamIzin.setColumns(10);
+		txtPkToplamIzin.setBounds(158, 41, 106, 20);
+		panel_5_3_1_1.add(txtPkToplamIzin);
+		
+		JLabel lblIzinKullan_1_1 = new JLabel("Çalışma Saatleri");
+		lblIzinKullan_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblIzinKullan_1_1.setBounds(568, 43, 100, 14);
+		panel_5_3_1_1.add(lblIzinKullan_1_1);
+		
+		txtPkCalSaati = new JTextField();
+		txtPkCalSaati.setColumns(10);
+		txtPkCalSaati.setBounds(678, 38, 106, 20);
+		panel_5_3_1_1.add(txtPkCalSaati);
+		
+		JLabel lblKullanlabilirIzinGn_1_1 = new JLabel("Görev Tanımı");
+		lblKullanlabilirIzinGn_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblKullanlabilirIzinGn_1_1.setBounds(303, 43, 100, 14);
+		panel_5_3_1_1.add(lblKullanlabilirIzinGn_1_1);
+		
+		JComboBox cboxpkGTanimi = new JComboBox();
+		cboxpkGTanimi.setModel(new DefaultComboBoxModel(new String[] {"Güvenlik Görevlisi", "Hasta Bakıcı", "Temizlik Görevlisi"}));
+		cboxpkGTanimi.setBounds(413, 40, 106, 22);
+		panel_5_3_1_1.add(cboxpkGTanimi);
+		
+		JLabel lblTelefonNumaras_1_1_1 = new JLabel("E Mail");
+		lblTelefonNumaras_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblTelefonNumaras_1_1_1.setBounds(10, 145, 85, 22);
+		panel_5_6_1.add(lblTelefonNumaras_1_1_1);
+		
+		txtPkMail = new JTextField();
+		txtPkMail.setColumns(10);
+		txtPkMail.setBounds(105, 147, 179, 20);
+		panel_5_6_1.add(txtPkMail);
+		//Personel Kayıt Action start
+		JButton btnPKKaydet = new JButton("Kaydet");
+		btnPKKaydet.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Personel p = new Personel();
+				p.Ad=txtPkAd.getText();
+				p.Adres=txtPKAdres.getText();
+				p.CalSaati=txtPkCalSaati.getText();
+				p.Cinsiyet=(String)cboxPKCinsiyet.getSelectedItem();
+				p.DogYer=txtPkDogYer.getText();
+				p.DogYil=Integer.parseInt(txtPkDogYil.getText());
+				p.GorevId=cboxpkGTanimi.getSelectedIndex()+1;
+				p.Mail=txtPkMail.getText();
+				p.Tc=txtPkTc.getText();
+				p.Telefon=txtPkTel.getText();
+				p.ToplamIzin=Integer.parseInt(txtPkToplamIzin.getText());
+				
+				try {
+					String sql1 = "INSERT INTO public.\"Personel\"(\"Ad\", \"Tc\", \"DogYer\", \"Cinsiyet\", \"Adres\", \"Telefon\", \"Mail\", \"ToplamIzin\", \"CalSaati\", \"GorevId\", \"DogYil\") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+					PreparedStatement prep =c.prepareStatement(sql1);
+					prep.setString(1,p.Ad);
+					prep.setString(2, p.Tc);
+					prep.setString(3, p.DogYer);
+					prep.setString(4, p.Cinsiyet);
+					prep.setString(5, p.Adres);
+					prep.setString(6, p.Telefon);
+					prep.setString(7, p.Mail);
+					prep.setInt(8, p.ToplamIzin);
+					prep.setString(9, p.CalSaati);
+					prep.setInt(10, p.GorevId);
+					prep.setInt(11, p.DogYil);
+
+					int den=prep.executeUpdate();
+					if (den==1) {
+						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+					}
+				} catch (SQLException e3) {
+
+					e3.printStackTrace();
+				}
+			}
+		});
+		btnPKKaydet.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnPKKaydet.setBounds(145, 317, 123, 27);
+		panel_3.add(btnPKKaydet);
+		//Personel Kayıt Action end
+		
+		
+		JButton btnPKIzinKullan = new JButton("İzin Kullan");
+		btnPKIzinKullan.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnPKIzinKullan.setBounds(638, 317, 123, 27);
+		panel_3.add(btnPKIzinKullan);
+		
+		JButton btnPKSil = new JButton("Sil");
+		btnPKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnPKSil.setBounds(478, 317, 123, 27);
+		panel_3.add(btnPKSil);
+		//Personel Kayıt Panel End
+		//Randevu Panel Start		
+		JPanel RandevuPanel = new JPanel();
+		tabbedPane.addTab("Randevu Sistemi", null, RandevuPanel, null);
+		RandevuPanel.setLayout(null);
+		
+		JPanel panel_2_1 = new JPanel();
+		panel_2_1.setBounds(0, 0, 1000, 376);
+		RandevuPanel.add(panel_2_1);
+		panel_2_1.setLayout(null);
+		
+		JPanel panel_5_4_1 = new JPanel();
+		panel_5_4_1.setLayout(null);
+		panel_5_4_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Randevu Al", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_4_1.setBounds(0, 0, 333, 376);
+		panel_2_1.add(panel_5_4_1);
+		
+		JLabel lblNewLabel_1_1 = new JLabel("Polikinlik");
+		lblNewLabel_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblNewLabel_1_1.setBounds(10, 25, 94, 14);
+		panel_5_4_1.add(lblNewLabel_1_1);
+		
+		JLabel lblTcKimlik_1_1 = new JLabel("Doktor");
+		lblTcKimlik_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblTcKimlik_1_1.setBounds(10, 71, 87, 14);
+		panel_5_4_1.add(lblTcKimlik_1_1);
+		
+		JLabel lblDoumTarihi_1_1 = new JLabel("Hasta T.C");
+		lblDoumTarihi_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumTarihi_1_1.setBounds(10, 122, 80, 22);
+		panel_5_4_1.add(lblDoumTarihi_1_1);
+		
+		JLabel lblDoumYeri_1_1 = new JLabel("Tarih");
+		lblDoumYeri_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1.setBounds(10, 173, 68, 22);
+		panel_5_4_1.add(lblDoumYeri_1_1);
+		
+		txtRSALHastaTc = new JTextField();
+		txtRSALHastaTc.setColumns(10);
+		txtRSALHastaTc.setBounds(112, 125, 179, 20);
+		panel_5_4_1.add(txtRSALHastaTc);
+		
+		
+		JComboBox cboxRSALPolikinlik = new JComboBox();
+		cboxRSALPolikinlik.setModel(new DefaultComboBoxModel(new String[] {"Fiziksel Tıp ve Rehabilitasyon", "Kalp ve Damar Cerrahisi", "Kardiyoloji", "Kulak Burun Boğaz", "Radyoloji", "Üroloji", "Beyin ve Sinir Cerrahisi", "Gastroenteroloji", "Genel Cerrahi", "Göz Hastalıkları", "Psikiyatri"}));
+		cboxRSALPolikinlik.setBounds(112, 23, 179, 22);
+		panel_5_4_1.add(cboxRSALPolikinlik);
+		
+		JButton btnRSAl = new JButton("Randevu Al");
+		btnRSAl.setBounds(112, 314, 123, 27);
+		panel_5_4_1.add(btnRSAl);
+		btnRSAl.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		
+		JComboBox cboxRSALDoktorAdi = new JComboBox();
+		cboxRSALDoktorAdi.setModel(new DefaultComboBoxModel(new String[] {"Buraya Doktor Adlarını Getir"}));
+		cboxRSALDoktorAdi.setBounds(112, 69, 179, 22);
+		panel_5_4_1.add(cboxRSALDoktorAdi);
+		
+		JLabel lblDoumYeri_1_1_2 = new JLabel("Saat");
+		lblDoumYeri_1_1_2.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_2.setBounds(10, 227, 68, 22);
+		panel_5_4_1.add(lblDoumYeri_1_1_2);
+		
+		JComboBox cboxRSALSaat = new JComboBox();
+		cboxRSALSaat.setModel(new DefaultComboBoxModel(new String[] {"Buraya Randevu Saatlerini Getir"}));
+		cboxRSALSaat.setBounds(112, 229, 179, 22);
+		panel_5_4_1.add(cboxRSALSaat);
+		panel_5_4_1_1.setBounds(327, 0, 333, 376);
+		panel_2_1.add(panel_5_4_1_1);
+		panel_5_4_1_1.setLayout(null);
+		panel_5_4_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Randevu Sil", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		
+		JLabel lblDoumTarihi_1_1_1 = new JLabel("Hasta T.C");
+		lblDoumTarihi_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumTarihi_1_1_1.setBounds(10, 25, 88, 22);
+		panel_5_4_1_1.add(lblDoumTarihi_1_1_1);
+		
+		textField_4 = new JTextField();
+		textField_4.setColumns(10);
+		textField_4.setBounds(112, 25, 103, 20);
+		panel_5_4_1_1.add(textField_4);
+		
+		JButton btnRSSil = new JButton("Randevu Sil");
+		btnRSSil.setBounds(112, 314, 123, 27);
+		panel_5_4_1_1.add(btnRSSil);
+		btnRSSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		
+		JButton btnAra = new JButton("Ara");
+		btnAra.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnAra.setBounds(222, 25, 69, 20);
+		panel_5_4_1_1.add(btnAra);
+		
+		JComboBox cboxRSSilRandevular = new JComboBox();
+		cboxRSSilRandevular.setModel(new DefaultComboBoxModel(new String[] {"Buraya Alınan Randevuları Getir "}));
+		cboxRSSilRandevular.setBounds(112, 71, 179, 22);
+		panel_5_4_1_1.add(cboxRSSilRandevular);
+		
+		JLabel lblNewLabel_1_1_1 = new JLabel("Randevular");
+		lblNewLabel_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblNewLabel_1_1_1.setBounds(10, 71, 96, 14);
+		panel_5_4_1_1.add(lblNewLabel_1_1_1);
+		
+		JPanel panel_5_4_1_1_1 = new JPanel();
+		panel_5_4_1_1_1.setLayout(null);
+		panel_5_4_1_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Randevu G\u00FCncelle", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_5_4_1_1_1.setBounds(657, 0, 333, 376);
+		panel_2_1.add(panel_5_4_1_1_1);
+		
+		JLabel lblDoumTarihi_1_1_1_1 = new JLabel("Hasta T.C");
+		lblDoumTarihi_1_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumTarihi_1_1_1_1.setBounds(10, 25, 96, 22);
+		panel_5_4_1_1_1.add(lblDoumTarihi_1_1_1_1);
+		
+		textField_2 = new JTextField();
+		textField_2.setColumns(10);
+		textField_2.setBounds(112, 25, 103, 20);
+		panel_5_4_1_1_1.add(textField_2);
+		
+		JButton btnRandevuGncelle = new JButton("Randevu Güncelle");
+		btnRandevuGncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnRandevuGncelle.setBounds(97, 314, 169, 27);
+		panel_5_4_1_1_1.add(btnRandevuGncelle);
+		
+		JButton btnAra_1 = new JButton("Ara");
+		btnAra_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnAra_1.setBounds(225, 24, 69, 20);
+		panel_5_4_1_1_1.add(btnAra_1);
+		
+		JComboBox cboxRSSGuncelleRandevular_1 = new JComboBox();
+		cboxRSSGuncelleRandevular_1.setModel(new DefaultComboBoxModel(new String[] {"Buraya Alınan Randevuları Getir"}));
+		cboxRSSGuncelleRandevular_1.setBounds(112, 67, 179, 22);
+		panel_5_4_1_1_1.add(cboxRSSGuncelleRandevular_1);
+		
+		JLabel lblNewLabel_1_1_1_1 = new JLabel("Randevular");
+		lblNewLabel_1_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblNewLabel_1_1_1_1.setBounds(10, 69, 96, 14);
+		panel_5_4_1_1_1.add(lblNewLabel_1_1_1_1);
+		
+		
+		JLabel lblDoumYeri_1_1_1 = new JLabel("Tarih");
+		lblDoumYeri_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_1.setBounds(10, 173, 68, 22);
+		panel_5_4_1_1_1.add(lblDoumYeri_1_1_1);
+		
+		JLabel lblTcKimlik_1_1_1 = new JLabel("Doktor");
+		lblTcKimlik_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblTcKimlik_1_1_1.setBounds(10, 120, 87, 14);
+		panel_5_4_1_1_1.add(lblTcKimlik_1_1_1);
+		
+		JComboBox cboxRSGuncelleDoktorAdi_1 = new JComboBox();
+		cboxRSGuncelleDoktorAdi_1.setModel(new DefaultComboBoxModel(new String[] {"Buraya Randevunun hangi doktorda olduğunu getir"}));
+		cboxRSGuncelleDoktorAdi_1.setBounds(112, 118, 179, 22);
+		panel_5_4_1_1_1.add(cboxRSGuncelleDoktorAdi_1);
+		
+		JComboBox cboxRSGuncelleSaat_1 = new JComboBox();
+		cboxRSGuncelleSaat_1.setModel(new DefaultComboBoxModel(new String[] {"Buraya alınan randevunun hangi saate alındığını getir"}));
+		cboxRSGuncelleSaat_1.setBounds(112, 227, 179, 22);
+		panel_5_4_1_1_1.add(cboxRSGuncelleSaat_1);
+		
+		JLabel lblDoumYeri_1_1_2_1 = new JLabel("Saat");
+		lblDoumYeri_1_1_2_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		lblDoumYeri_1_1_2_1.setBounds(10, 225, 68, 22);
+		panel_5_4_1_1_1.add(lblDoumYeri_1_1_2_1);
+		
+		JPanel panel_8_2 = new JPanel();
+		panel_8_2.setLayout(null);
+		panel_8_2.setBounds(0, 0, 188, 376);
+		RandevuPanel.add(panel_8_2);
+		//Randevu Panel End
+				
+		
 		JButton btnGiris = new JButton("Giriş Yap");
 		btnGiris.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -195,1115 +1476,22 @@ public class MainFrame extends JFrame {
 				String girp = new String(txtGirisPassword.getPassword());
 				String girt=txtgirisTc.getText();
 				String PF;
-				ii = new ArrayList<Member>();
+				member = new ArrayList<Member>();
 				String sql1 = "SELECT \"Id\", \"Ad\", \"Tc\", \"Password\", \"Unvan\" FROM public.\"Member\" where \"Tc\"='"+girt+"' and \"Password\" = '"+girp+"';";
 				ResultSet rs;
 				try {
 					rs = s.executeQuery(sql1);
-					
+										
 					if (rs.next()) {
 						Member mm = new Member();
 						mm.Unvan= rs.getString("Unvan");
 						String unv=mm.Unvan;
 							if(unv.equals("doktor")) {
-								
-								//Hasta Kayit Panel Start
-								JPanel HastaKayitPanel = new JPanel();
-								tabbedPane.addTab("Hasta Kayıt", null, HastaKayitPanel, null);
-								HastaKayitPanel.setLayout(null);
-								
-								JPanel panel_8 = new JPanel();
-								panel_8.setBounds(0, 0, 188, 376);
-								HastaKayitPanel.add(panel_8);
-								panel_8.setLayout(null);
-								
-								JButton btnHasAra_1_1 = new JButton("Ara");
-								btnHasAra_1_1.setBounds(102, 0, 86, 21);
-								panel_8.add(btnHasAra_1_1);
-								
-								textField = new JTextField();
-								textField.setColumns(10);
-								textField.setBounds(0, 0, 101, 21);
-								panel_8.add(textField);
-								
-								JTree tree_1_2 = new JTree();
-								tree_1_2.setBounds(0, 22, 188, 355);
-								panel_8.add(tree_1_2);
-								
-								JPanel panel = new JPanel();
-								panel.setBounds(198, 0, 835, 376);
-								HastaKayitPanel.add(panel);
-								panel.setLayout(null);
-								
-								JPanel panel_5 = new JPanel();
-								panel_5.setLayout(null);
-								panel_5.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Kimlik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5.setBounds(0, 0, 270, 167);
-								panel.add(panel_5);
-								
-								JLabel lblNewLabel = new JLabel("Ad Soyad");
-								lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblNewLabel.setBounds(10, 25, 124, 14);
-								panel_5.add(lblNewLabel);
-								
-								JLabel lblTcKimlik = new JLabel("T.C. Kimlik Numarası");
-								lblTcKimlik.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTcKimlik.setBounds(10, 50, 124, 14);
-								panel_5.add(lblTcKimlik);
-								
-								JLabel lblDoumTarihi = new JLabel("Doğum Tarihi");
-								lblDoumTarihi.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumTarihi.setBounds(10, 75, 124, 17);
-								panel_5.add(lblDoumTarihi);
-								
-								JLabel lblDoumYeri = new JLabel("Doğum Yeri");
-								lblDoumYeri.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumYeri.setBounds(10, 100, 124, 15);
-								panel_5.add(lblDoumYeri);
-								
-								JLabel lblCinsiyeti = new JLabel("Cinsiyeti");
-								lblCinsiyeti.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblCinsiyeti.setBounds(10, 125, 124, 14);
-								panel_5.add(lblCinsiyeti);
-								
-								JComboBox cboxHKCinsiyet = new JComboBox();
-								cboxHKCinsiyet.setBounds(144, 125, 106, 22);
-								panel_5.add(cboxHKCinsiyet);
-								
-								textField_6 = new JTextField();
-								textField_6.setColumns(10);
-								textField_6.setBounds(144, 23, 106, 20);
-								panel_5.add(textField_6);
-								
-								textField_7 = new JTextField();
-								textField_7.setColumns(10);
-								textField_7.setBounds(144, 50, 106, 20);
-								panel_5.add(textField_7);
-								
-								textField_8 = new JTextField();
-								textField_8.setColumns(10);
-								textField_8.setBounds(144, 75, 106, 20);
-								panel_5.add(textField_8);
-								
-								textField_9 = new JTextField();
-								textField_9.setColumns(10);
-								textField_9.setBounds(144, 100, 106, 20);
-								panel_5.add(textField_9);
-								
-								JPanel panel_5_1 = new JPanel();
-								panel_5_1.setLayout(null);
-								panel_5_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130leti\u015Fim Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_1.setBounds(270, 0, 270, 167);
-								panel.add(panel_5_1);
-								
-								JLabel lblAdres = new JLabel("Adres");
-								lblAdres.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblAdres.setBounds(10, 25, 124, 14);
-								panel_5_1.add(lblAdres);
-								
-								JLabel lblTelefonNumaras = new JLabel("Telefon No");
-								lblTelefonNumaras.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTelefonNumaras.setBounds(10, 125, 85, 22);
-								panel_5_1.add(lblTelefonNumaras);
-								
-								textField_10 = new JTextField();
-								textField_10.setColumns(10);
-								textField_10.setBounds(105, 125, 145, 20);
-								panel_5_1.add(textField_10);
-								
-								JTextArea txtHKAdres = new JTextArea();
-								txtHKAdres.setBounds(105, 26, 145, 88);
-								panel_5_1.add(txtHKAdres);
-								
-								JPanel panel_5_2 = new JPanel();
-								panel_5_2.setLayout(null);
-								panel_5_2.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Hasta Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_2.setBounds(539, 0, 270, 167);
-								panel.add(panel_5_2);
-								
-								JLabel lblSigortaTr = new JLabel("Sigorta Türü");
-								lblSigortaTr.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblSigortaTr.setBounds(10, 25, 124, 17);
-								panel_5_2.add(lblSigortaTr);
-								
-								JLabel lblSicilNo = new JLabel("Sicil No");
-								lblSicilNo.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblSicilNo.setBounds(10, 50, 124, 14);
-								panel_5_2.add(lblSicilNo);
-								
-								textField_11 = new JTextField();
-								textField_11.setColumns(10);
-								textField_11.setBounds(144, 50, 106, 20);
-								panel_5_2.add(textField_11);
-								
-								JComboBox cboxHKSigTur = new JComboBox();
-								cboxHKSigTur.setBounds(144, 22, 106, 22);
-								panel_5_2.add(cboxHKSigTur);
-								
-								JLabel lblRefakatBilgileri = new JLabel("Refakatçı Adı");
-								lblRefakatBilgileri.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblRefakatBilgileri.setBounds(10, 75, 124, 14);
-								panel_5_2.add(lblRefakatBilgileri);
-								
-								textField_12 = new JTextField();
-								textField_12.setColumns(10);
-								textField_12.setBounds(144, 75, 106, 20);
-								panel_5_2.add(textField_12);
-								
-								JLabel lblHKRefDerece = new JLabel("Yakınlık Derecesi");
-								lblHKRefDerece.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblHKRefDerece.setBounds(10, 125, 124, 14);
-								panel_5_2.add(lblHKRefDerece);
-								
-								textField_13 = new JTextField();
-								textField_13.setColumns(10);
-								textField_13.setBounds(144, 125, 106, 20);
-								panel_5_2.add(textField_13);
-								
-								JLabel lblPolikinlik = new JLabel("Polikinlik");
-								lblPolikinlik.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblPolikinlik.setBounds(10, 100, 106, 22);
-								panel_5_2.add(lblPolikinlik);
-								
-								JComboBox cboxHKPol = new JComboBox();
-								cboxHKPol.setBounds(144, 100, 106, 22);
-								panel_5_2.add(cboxHKPol);
-								
-								JPanel panel_5_3 = new JPanel();
-								panel_5_3.setLayout(null);
-								panel_5_3.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Hastal\u0131k Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_3.setBounds(0, 167, 815, 160);
-								panel.add(panel_5_3);
-								
-								JLabel lblYas = new JLabel("Yaş");
-								lblYas.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblYas.setBounds(10, 25, 124, 14);
-								panel_5_3.add(lblYas);
-								
-								textField_14 = new JTextField();
-								textField_14.setColumns(10);
-								textField_14.setBounds(144, 23, 106, 20);
-								panel_5_3.add(textField_14);
-								
-								JLabel lblBoy = new JLabel("Boy");
-								lblBoy.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblBoy.setBounds(10, 50, 124, 14);
-								panel_5_3.add(lblBoy);
-								
-								textField_15 = new JTextField();
-								textField_15.setColumns(10);
-								textField_15.setBounds(144, 50, 106, 20);
-								panel_5_3.add(textField_15);
-								
-								JLabel lblKilo = new JLabel("Kilo");
-								lblKilo.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKilo.setBounds(10, 75, 124, 14);
-								panel_5_3.add(lblKilo);
-								
-								textField_16 = new JTextField();
-								textField_16.setColumns(10);
-								textField_16.setBounds(144, 75, 106, 20);
-								panel_5_3.add(textField_16);
-								
-								JLabel lblEkg = new JLabel("Kan Grubu");
-								lblEkg.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblEkg.setBounds(10, 100, 124, 14);
-								panel_5_3.add(lblEkg);
-								
-								JLabel lblSonGncelleme = new JLabel("Son Güncelleme");
-								lblSonGncelleme.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblSonGncelleme.setBounds(553, 25, 124, 14);
-								panel_5_3.add(lblSonGncelleme);
-								
-								textField_17 = new JTextField();
-								textField_17.setEditable(false);
-								textField_17.setColumns(10);
-								textField_17.setBounds(687, 25, 106, 20);
-								panel_5_3.add(textField_17);
-								
-								JLabel lblEkg_1 = new JLabel("EKG");
-								lblEkg_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblEkg_1.setBounds(10, 125, 124, 14);
-								panel_5_3.add(lblEkg_1);
-								
-								textField_18 = new JTextField();
-								textField_18.setColumns(10);
-								textField_18.setBounds(144, 125, 106, 20);
-								panel_5_3.add(textField_18);
-								
-								JLabel lblHKGecmisHastalklar = new JLabel("Geçmiş Hastalıklar");
-								lblHKGecmisHastalklar.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblHKGecmisHastalklar.setBounds(553, 70, 124, 14);
-								panel_5_3.add(lblHKGecmisHastalklar);
-								
-								JTextArea txtHKHastaliklar = new JTextArea();
-								txtHKHastaliklar.setBounds(553, 94, 240, 45);
-								panel_5_3.add(txtHKHastaliklar);
-								
-								JPanel panel_6 = new JPanel();
-								panel_6.setBorder(new TitledBorder(null, "Tedavi \u015Eekli", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-								panel_6.setBounds(284, 17, 240, 52);
-								panel_5_3.add(panel_6);
-								
-								JRadioButton rdbtnAyakta = new JRadioButton("Ayakta");
-								
-								JRadioButton rdbtnYatarak = new JRadioButton("Yatarak");
-								GroupLayout gl_panel_6 = new GroupLayout(panel_6);
-								gl_panel_6.setHorizontalGroup(
-									gl_panel_6.createParallelGroup(Alignment.LEADING)
-										.addGap(0, 240, Short.MAX_VALUE)
-										.addGroup(gl_panel_6.createSequentialGroup()
-											.addComponent(rdbtnAyakta, GroupLayout.PREFERRED_SIZE, 85, GroupLayout.PREFERRED_SIZE)
-											.addGap(42)
-											.addComponent(rdbtnYatarak, GroupLayout.PREFERRED_SIZE, 85, GroupLayout.PREFERRED_SIZE))
-								);
-								gl_panel_6.setVerticalGroup(
-									gl_panel_6.createParallelGroup(Alignment.LEADING)
-										.addGap(0, 52, Short.MAX_VALUE)
-										.addGroup(gl_panel_6.createSequentialGroup()
-											.addGap(7)
-											.addGroup(gl_panel_6.createParallelGroup(Alignment.LEADING)
-												.addComponent(rdbtnAyakta)
-												.addComponent(rdbtnYatarak)))
-								);
-								panel_6.setLayout(gl_panel_6);
-								
-								JComboBox cboxHKKanGrub = new JComboBox();
-								cboxHKKanGrub.setBounds(144, 100, 106, 22);
-								panel_5_3.add(cboxHKKanGrub);
-								
-								JLabel lblKullandIlalar = new JLabel("Kullandığı İlaçlar");
-								lblKullandIlalar.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKullandIlalar.setBounds(284, 70, 124, 17);
-								panel_5_3.add(lblKullandIlalar);
-								
-								JTextArea txtHKilaclar = new JTextArea();
-								txtHKilaclar.setBounds(284, 94, 240, 45);
-								panel_5_3.add(txtHKilaclar);
-								
-								JButton btnHKSil = new JButton("Sil");
-								btnHKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnHKSil.setBounds(524, 338, 123, 27);
-								panel.add(btnHKSil);
-								
-								JButton btnGuncelleHasta = new JButton("Güncelle");
-								btnGuncelleHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnGuncelleHasta.setBounds(356, 338, 123, 27);
-								panel.add(btnGuncelleHasta);
-								
-								JButton btnKaydetHasta = new JButton("Kaydet");
-								btnKaydetHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnKaydetHasta.setBounds(181, 338, 123, 27);
-								panel.add(btnKaydetHasta);
-								//Hasta Kayit Panel End
-								//Acil Servis Panel Start
-								
-								JPanel AcilServisPanel = new JPanel();
-								tabbedPane.addTab("Acil Servis", null, AcilServisPanel, null);
-								AcilServisPanel.setLayout(null);
-								
-								JPanel panel_2_1_1 = new JPanel();
-								panel_2_1_1.setLayout(null);
-								panel_2_1_1.setBounds(194, 0, 806, 376);
-								AcilServisPanel.add(panel_2_1_1);
-								
-								JPanel panel_5_4_1_2 = new JPanel();
-								panel_5_4_1_2.setLayout(null);
-								panel_5_4_1_2.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
-								panel_5_4_1_2.setBounds(0, 0, 270, 246);
-								panel_2_1_1.add(panel_5_4_1_2);
-								
-								JLabel lblNewLabel_1_1_3 = new JLabel("Hasta Adı");
-								lblNewLabel_1_1_3.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblNewLabel_1_1_3.setBounds(24, 11, 81, 14);
-								panel_5_4_1_2.add(lblNewLabel_1_1_3);
-								
-								JPanel panel_6_1 = new JPanel();
-								panel_6_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Acil Rengi", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_6_1.setBounds(24, 90, 229, 55);
-								panel_5_4_1_2.add(panel_6_1);
-								
-								JRadioButton rdbtnKrmz = new JRadioButton("Kırmızı");
-								rdbtnKrmz.setFont(new Font("Tahoma", Font.PLAIN, 14));
-								rdbtnKrmz.setForeground(new Color(255, 0, 0));
-								bg2.add(rdbtnKrmz);
-								
-								JRadioButton rdbtnSar = new JRadioButton("Sarı");
-								rdbtnSar.setFont(new Font("Tahoma", Font.PLAIN, 14));
-								rdbtnSar.setForeground(new Color(255, 204, 0));
-								bg2.add(rdbtnSar);
-								
-								JRadioButton rdbtnYesil = new JRadioButton("Yeşil");
-								rdbtnYesil.setForeground(new Color(0, 204, 0));
-								rdbtnYesil.setFont(new Font("Tahoma", Font.PLAIN, 14));
-								bg2.add(rdbtnYesil);
-								
-								GroupLayout gl_panel_6_1 = new GroupLayout(panel_6_1);
-								gl_panel_6_1.setHorizontalGroup(
-									gl_panel_6_1.createParallelGroup(Alignment.LEADING)
-										.addGroup(gl_panel_6_1.createSequentialGroup()
-											.addComponent(rdbtnKrmz, GroupLayout.PREFERRED_SIZE, 85, GroupLayout.PREFERRED_SIZE)
-											.addPreferredGap(ComponentPlacement.RELATED)
-											.addComponent(rdbtnSar, GroupLayout.PREFERRED_SIZE, 58, GroupLayout.PREFERRED_SIZE)
-											.addGap(18)
-											.addComponent(rdbtnYesil)
-											.addGap(40))
-								);
-								gl_panel_6_1.setVerticalGroup(
-									gl_panel_6_1.createParallelGroup(Alignment.LEADING)
-										.addGroup(gl_panel_6_1.createSequentialGroup()
-											.addGap(7)
-											.addGroup(gl_panel_6_1.createParallelGroup(Alignment.BASELINE)
-												.addComponent(rdbtnKrmz)
-												.addComponent(rdbtnSar)
-												.addComponent(rdbtnYesil)))
-								);
-								panel_6_1.setLayout(gl_panel_6_1);
-								
-								txtAShastaAdi = new JTextField();
-								txtAShastaAdi.setBounds(115, 11, 130, 20);
-								panel_5_4_1_2.add(txtAShastaAdi);
-								txtAShastaAdi.setColumns(10);
-								
-								JLabel lblDoumYeri_1_1_3_3_1 = new JLabel("Şuur");
-								lblDoumYeri_1_1_3_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_3_3_1.setBounds(24, 155, 81, 22);
-								panel_5_4_1_2.add(lblDoumYeri_1_1_3_3_1);
-								
-								txtASsuur = new JTextField();
-								txtASsuur.setColumns(10);
-								txtASsuur.setBounds(115, 155, 130, 20);
-								panel_5_4_1_2.add(txtASsuur);
-								
-								JLabel lblDoumYeri_1_1_3_3_1_1 = new JLabel("Ateş");
-								lblDoumYeri_1_1_3_3_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_3_3_1_1.setBounds(24, 185, 81, 22);
-								panel_5_4_1_2.add(lblDoumYeri_1_1_3_3_1_1);
-								
-								txtASates = new JTextField();
-								txtASates.setColumns(10);
-								txtASates.setBounds(115, 186, 130, 20);
-								panel_5_4_1_2.add(txtASates);
-								
-								JLabel lblNewLabel_1_1_3_1 = new JLabel("Hasta Tc");
-								lblNewLabel_1_1_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblNewLabel_1_1_3_1.setBounds(24, 51, 81, 14);
-								panel_5_4_1_2.add(lblNewLabel_1_1_3_1);
-								
-								txtAStc = new JTextField();
-								txtAStc.setEditable(false);
-								txtAStc.setColumns(10);
-								txtAStc.setBounds(115, 50, 130, 20);
-								panel_5_4_1_2.add(txtAStc);
-								
-								JPanel panel_5_4_1_2_1 = new JPanel();
-								panel_5_4_1_2_1.setLayout(null);
-								panel_5_4_1_2_1.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
-								panel_5_4_1_2_1.setBounds(270, 0, 270, 246);
-								panel_2_1_1.add(panel_5_4_1_2_1);
-								
-								JTextArea txtASgecmis = new JTextArea();
-								txtASgecmis.setBounds(10, 141, 227, 70);
-								panel_5_4_1_2_1.add(txtASgecmis);
-								
-								JLabel lblDoumYeri_1_1_3_3 = new JLabel("Hastalık / Ameliyat Geçmişi");
-								lblDoumYeri_1_1_3_3.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_3_3.setBounds(10, 108, 242, 22);
-								panel_5_4_1_2_1.add(lblDoumYeri_1_1_3_3);
-								
-								txtASekg = new JTextField();
-								txtASekg.setBounds(107, 51, 130, 20);
-								panel_5_4_1_2_1.add(txtASekg);
-								txtASekg.setColumns(10);
-								
-								JLabel lblDoumYeri_1_1_3_3_1_3 = new JLabel("EKG");
-								lblDoumYeri_1_1_3_3_1_3.setBounds(16, 51, 81, 22);
-								panel_5_4_1_2_1.add(lblDoumYeri_1_1_3_3_1_3);
-								lblDoumYeri_1_1_3_3_1_3.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								
-								JLabel lblDoumYeri_1_1_3_3_1_2 = new JLabel("Nabız");
-								lblDoumYeri_1_1_3_3_1_2.setBounds(16, 11, 81, 22);
-								panel_5_4_1_2_1.add(lblDoumYeri_1_1_3_3_1_2);
-								lblDoumYeri_1_1_3_3_1_2.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								
-								txtASnabiz = new JTextField();
-								txtASnabiz.setBounds(107, 11, 130, 20);
-								panel_5_4_1_2_1.add(txtASnabiz);
-								txtASnabiz.setColumns(10);
-								
-								JPanel panel_5_4_1_2_2 = new JPanel();
-								panel_5_4_1_2_2.setLayout(null);
-								panel_5_4_1_2_2.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
-								panel_5_4_1_2_2.setBounds(545, 0, 251, 246);
-								panel_2_1_1.add(panel_5_4_1_2_2);
-								
-								JTextArea txtAStani = new JTextArea();
-								txtAStani.setBounds(10, 145, 227, 70);
-								panel_5_4_1_2_2.add(txtAStani);
-								
-								JLabel lblDoumYeri_1_1_3_2_1 = new JLabel("İlk Tanı");
-								lblDoumYeri_1_1_3_2_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_3_2_1.setBounds(10, 112, 124, 22);
-								panel_5_4_1_2_2.add(lblDoumYeri_1_1_3_2_1);
-								
-								JTextArea txtASilac = new JTextArea();
-								txtASilac.setBounds(10, 41, 227, 60);
-								panel_5_4_1_2_2.add(txtASilac);
-								
-								JLabel lblDoumYeri_1_1_3_1 = new JLabel("Kullandığı İlcaçlar");
-								lblDoumYeri_1_1_3_1.setBounds(10, 11, 124, 22);
-								panel_5_4_1_2_2.add(lblDoumYeri_1_1_3_1);
-								lblDoumYeri_1_1_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								
-								JButton btnASKaydet = new JButton("Kaydet");
-								btnASKaydet.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnASKaydet.setBounds(193, 307, 123, 27);
-								panel_2_1_1.add(btnASKaydet);
-								
-								JButton btnASGuncelle = new JButton("Güncelle");
-								btnASGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnASGuncelle.setBounds(352, 307, 123, 27);
-								panel_2_1_1.add(btnASGuncelle);
-								
-								JButton btnSil = new JButton("Sil");
-								btnSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnSil.setBounds(513, 307, 123, 27);
-								panel_2_1_1.add(btnSil);
-								
-								JPanel panel_8_4_1 = new JPanel();
-								panel_8_4_1.setLayout(null);
-								panel_8_4_1.setBounds(0, 0, 188, 376);
-								AcilServisPanel.add(panel_8_4_1);
-								
-								JButton btnHasAra_1_1_2_1 = new JButton("Ara");
-								btnHasAra_1_1_2_1.setBounds(102, 0, 86, 21);
-								panel_8_4_1.add(btnHasAra_1_1_2_1);
-								
-								textField_3 = new JTextField();
-								textField_3.setColumns(10);
-								textField_3.setBounds(0, 0, 101, 21);
-								panel_8_4_1.add(textField_3);
-								
-								JTree tree_1_2_2_1 = new JTree();
-								tree_1_2_2_1.setBounds(0, 22, 188, 355);
-								panel_8_4_1.add(tree_1_2_2_1);
-								//Acil Servis Panel End
+														
 															
 							}
 							else if(unv.equals("personel")) {
-								//Doktor Kayit Panel Start
-								JPanel DoktorKayitPanel = new JPanel();
-								tabbedPane.addTab("Doktor Kayıt", null, DoktorKayitPanel, null);
-								DoktorKayitPanel.setLayout(null);
 								
-								JPanel panel_1 = new JPanel();
-								panel_1.setBounds(198, 0, 802, 376);
-								DoktorKayitPanel.add(panel_1);
-								panel_1.setLayout(null);
-								
-								JPanel panel_5_4 = new JPanel();
-								panel_5_4.setLayout(null);
-								panel_5_4.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Kimlik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_4.setBounds(0, 0, 270, 182);
-								panel_1.add(panel_5_4);
-								
-								JLabel lblNewLabel_1 = new JLabel("Ad Soyad");
-								lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblNewLabel_1.setBounds(10, 25, 124, 14);
-								panel_5_4.add(lblNewLabel_1);
-								
-								JLabel lblTcKimlik_1 = new JLabel("T.C. Kimlik Numarası");
-								lblTcKimlik_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTcKimlik_1.setBounds(10, 55, 124, 14);
-								panel_5_4.add(lblTcKimlik_1);
-								
-								JLabel lblDoumTarihi_1 = new JLabel("Doğum Tarihi");
-								lblDoumTarihi_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumTarihi_1.setBounds(10, 85, 124, 22);
-								panel_5_4.add(lblDoumTarihi_1);
-								
-								JLabel lblDoumYeri_1 = new JLabel("Doğum Yeri");
-								lblDoumYeri_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumYeri_1.setBounds(10, 115, 124, 17);
-								panel_5_4.add(lblDoumYeri_1);
-								
-								JLabel lblCinsiyeti_1 = new JLabel("Cinsiyeti");
-								lblCinsiyeti_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblCinsiyeti_1.setBounds(10, 145, 124, 14);
-								panel_5_4.add(lblCinsiyeti_1);
-								
-								JComboBox cboxDKCinsiyet = new JComboBox();
-								cboxDKCinsiyet.setBounds(144, 145, 106, 22);
-								panel_5_4.add(cboxDKCinsiyet);
-								
-								textField_1 = new JTextField();
-								textField_1.setColumns(10);
-								textField_1.setBounds(144, 23, 106, 20);
-								panel_5_4.add(textField_1);
-								
-								textField_20 = new JTextField();
-								textField_20.setColumns(10);
-								textField_20.setBounds(144, 55, 106, 20);
-								panel_5_4.add(textField_20);
-								
-								textField_21 = new JTextField();
-								textField_21.setColumns(10);
-								textField_21.setBounds(144, 85, 106, 20);
-								panel_5_4.add(textField_21);
-								
-								textField_22 = new JTextField();
-								textField_22.setColumns(10);
-								textField_22.setBounds(144, 115, 106, 20);
-								panel_5_4.add(textField_22);
-								
-								JPanel panel_5_5 = new JPanel();
-								panel_5_5.setLayout(null);
-								panel_5_5.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Akademik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_5.setBounds(270, 0, 270, 182);
-								panel_1.add(panel_5_5);
-								
-								JLabel lblDoumYeri_2 = new JLabel("Alanı");
-								lblDoumYeri_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumYeri_2.setBounds(10, 145, 124, 22);
-								panel_5_5.add(lblDoumYeri_2);
-								
-								textField_23 = new JTextField();
-								textField_23.setColumns(10);
-								textField_23.setBounds(144, 145, 106, 20);
-								panel_5_5.add(textField_23);
-								
-								JPanel panel_6_1_1 = new JPanel();
-								panel_6_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "E\u011Fitim Derecesi", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_6_1_1.setBounds(10, 25, 240, 70);
-								panel_5_5.add(panel_6_1_1);
-								
-								JRadioButton rdbtnYksekLisans = new JRadioButton("Yüksek Lisans");
-								rdbtnYksekLisans.setForeground(Color.BLACK);
-								rdbtnYksekLisans.setFont(new Font("Tahoma", Font.PLAIN, 14));
-								
-								JRadioButton rdbtnDoctora = new JRadioButton("Doktora");
-								rdbtnDoctora.setForeground(Color.BLACK);
-								rdbtnDoctora.setFont(new Font("Tahoma", Font.PLAIN, 14));
-								GroupLayout gl_panel_6_1_1 = new GroupLayout(panel_6_1_1);
-								gl_panel_6_1_1.setHorizontalGroup(
-									gl_panel_6_1_1.createParallelGroup(Alignment.LEADING)
-										.addGap(0, 240, Short.MAX_VALUE)
-										.addGroup(gl_panel_6_1_1.createSequentialGroup()
-											.addComponent(rdbtnYksekLisans, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
-											.addGap(18)
-											.addComponent(rdbtnDoctora)
-											.addGap(32))
-								);
-								gl_panel_6_1_1.setVerticalGroup(
-									gl_panel_6_1_1.createParallelGroup(Alignment.LEADING)
-										.addGap(0, 70, Short.MAX_VALUE)
-										.addGroup(gl_panel_6_1_1.createSequentialGroup()
-											.addGap(7)
-											.addGroup(gl_panel_6_1_1.createParallelGroup(Alignment.BASELINE)
-												.addComponent(rdbtnYksekLisans)
-												.addComponent(rdbtnDoctora))
-											.addContainerGap(26, Short.MAX_VALUE))
-								);
-								panel_6_1_1.setLayout(gl_panel_6_1_1);
-								
-								JLabel lblDoumYeri_2_1 = new JLabel("Polikinlik");
-								lblDoumYeri_2_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumYeri_2_1.setBounds(10, 106, 124, 22);
-								panel_5_5.add(lblDoumYeri_2_1);
-								
-								JComboBox cboxDKPol = new JComboBox();
-								cboxDKPol.setBounds(144, 107, 106, 22);
-								panel_5_5.add(cboxDKPol);
-								
-								JPanel panel_5_6 = new JPanel();
-								panel_5_6.setLayout(null);
-								panel_5_6.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130leti\u015Fim Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_6.setBounds(539, 0, 253, 182);
-								panel_1.add(panel_5_6);
-								
-								JLabel lblAdres_1 = new JLabel("Adres");
-								lblAdres_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblAdres_1.setBounds(10, 25, 124, 14);
-								panel_5_6.add(lblAdres_1);
-								
-								JTextArea txtDKAdres = new JTextArea();
-								txtDKAdres.setBounds(105, 25, 138, 68);
-								panel_5_6.add(txtDKAdres);
-								
-								JLabel lblTelefonNumaras_1 = new JLabel("Telefon No");
-								lblTelefonNumaras_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTelefonNumaras_1.setBounds(10, 102, 85, 22);
-								panel_5_6.add(lblTelefonNumaras_1);
-								
-								textField_24 = new JTextField();
-								textField_24.setColumns(10);
-								textField_24.setBounds(105, 104, 138, 20);
-								panel_5_6.add(textField_24);
-								
-								JLabel lblTelefonNumaras_1_1 = new JLabel("E Mail");
-								lblTelefonNumaras_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTelefonNumaras_1_1.setBounds(10, 145, 85, 22);
-								panel_5_6.add(lblTelefonNumaras_1_1);
-								
-								textField_25 = new JTextField();
-								textField_25.setColumns(10);
-								textField_25.setBounds(105, 147, 138, 20);
-								panel_5_6.add(textField_25);
-								
-								JPanel panel_5_3_1 = new JPanel();
-								panel_5_3_1.setLayout(null);
-								panel_5_3_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130\u015F Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_3_1.setBounds(0, 181, 792, 108);
-								panel_1.add(panel_5_3_1);
-								
-								JLabel lblizin = new JLabel("Toplam İzin Günü");
-								lblizin.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblizin.setBounds(10, 25, 137, 14);
-								panel_5_3_1.add(lblizin);
-								
-								JLabel lblKullanlabilirIzinGn = new JLabel("Kullanılabilir İzin Günü");
-								lblKullanlabilirIzinGn.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKullanlabilirIzinGn.setBounds(10, 64, 137, 14);
-								panel_5_3_1.add(lblKullanlabilirIzinGn);
-								
-								JLabel lblKullanlmIzinGn = new JLabel("Kullanılmış İzin Günü");
-								lblKullanlmIzinGn.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKullanlmIzinGn.setBounds(305, 25, 137, 14);
-								panel_5_3_1.add(lblKullanlmIzinGn);
-								
-								textField_26 = new JTextField();
-								textField_26.setColumns(10);
-								textField_26.setBounds(158, 23, 106, 20);
-								panel_5_3_1.add(textField_26);
-								
-								textField_27 = new JTextField();
-								textField_27.setEditable(false);
-								textField_27.setColumns(10);
-								textField_27.setBounds(157, 62, 106, 20);
-								panel_5_3_1.add(textField_27);
-								
-								textField_28 = new JTextField();
-								textField_28.setEditable(false);
-								textField_28.setColumns(10);
-								textField_28.setBounds(452, 23, 106, 20);
-								panel_5_3_1.add(textField_28);
-								
-								JLabel lblIzinKullan_1 = new JLabel("Çalışma Saatleri");
-								lblIzinKullan_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblIzinKullan_1.setBounds(568, 25, 100, 14);
-								panel_5_3_1.add(lblIzinKullan_1);
-								
-								textField_29 = new JTextField();
-								textField_29.setColumns(10);
-								textField_29.setBounds(678, 20, 106, 20);
-								panel_5_3_1.add(textField_29);
-								
-								JButton btnKaydetDoktor = new JButton("Kaydet");
-								btnKaydetDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnKaydetDoktor.setBounds(147, 321, 123, 27);
-								panel_1.add(btnKaydetDoktor);
-								
-								JButton btnGncelleDoktor = new JButton("Güncelle");
-								btnGncelleDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnGncelleDoktor.setBounds(301, 321, 123, 27);
-								panel_1.add(btnGncelleDoktor);
-								
-								JButton btnDKSil = new JButton("Sil");
-								btnDKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnDKSil.setBounds(457, 321, 123, 27);
-								panel_1.add(btnDKSil);
-								
-								JButton btnDKIzinKullan = new JButton("İzin Kullan");
-								btnDKIzinKullan.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnDKIzinKullan.setBounds(618, 321, 123, 27);
-								panel_1.add(btnDKIzinKullan);
-								
-								JPanel panel_8_1 = new JPanel();
-								panel_8_1.setLayout(null);
-								panel_8_1.setBounds(0, 0, 188, 376);
-								DoktorKayitPanel.add(panel_8_1);
-								
-								JButton btnHasAra_1_1_1 = new JButton("Ara");
-								btnHasAra_1_1_1.setBounds(102, 0, 86, 21);
-								panel_8_1.add(btnHasAra_1_1_1);
-								
-								textField_30 = new JTextField();
-								textField_30.setColumns(10);
-								textField_30.setBounds(0, 0, 101, 21);
-								panel_8_1.add(textField_30);
-								
-								JTree tree_1_2_1 = new JTree();
-								tree_1_2_1.setBounds(0, 22, 188, 355);
-								panel_8_1.add(tree_1_2_1);
-								
-								//Doktor Kayıt Panel End
-								//Personel Kayıt Panel Start
-								JPanel PersonelKayitPanel = new JPanel();
-								tabbedPane.addTab("Personel Kayıt", null, PersonelKayitPanel, null);
-								PersonelKayitPanel.setLayout(null);
-								
-								JPanel panel_3_1 = new JPanel();
-								panel_3_1.setLayout(null);
-								panel_3_1.setBounds(0, 0, 1000, 376);
-								PersonelKayitPanel.add(panel_3_1);
-								
-								JPanel panel_8_4 = new JPanel();
-								panel_8_4.setLayout(null);
-								panel_8_4.setBounds(0, 0, 188, 376);
-								panel_3_1.add(panel_8_4);
-								
-								JButton btnHasAra_1_1_2 = new JButton("Ara");
-								btnHasAra_1_1_2.setBounds(102, 0, 86, 21);
-								panel_8_4.add(btnHasAra_1_1_2);
-								
-								textField_19 = new JTextField();
-								textField_19.setColumns(10);
-								textField_19.setBounds(0, 0, 101, 21);
-								panel_8_4.add(textField_19);
-								
-								JTree tree_1_2_2 = new JTree();
-								tree_1_2_2.setBounds(0, 22, 188, 355);
-								panel_8_4.add(tree_1_2_2);
-								
-								JPanel panel_3 = new JPanel();
-								panel_3.setBounds(198, 0, 802, 376);
-								panel_3_1.add(panel_3);
-								panel_3.setLayout(null);
-								
-								JPanel panel_5_4_2 = new JPanel();
-								panel_5_4_2.setLayout(null);
-								panel_5_4_2.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Kimlik Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_4_2.setBounds(0, 0, 407, 182);
-								panel_3.add(panel_5_4_2);
-								
-								JLabel lblNewLabel_1_2 = new JLabel("Ad Soyad");
-								lblNewLabel_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblNewLabel_1_2.setBounds(10, 25, 124, 14);
-								panel_5_4_2.add(lblNewLabel_1_2);
-								
-								JLabel lblTcKimlik_1_2 = new JLabel("T.C. Kimlik Numarası");
-								lblTcKimlik_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTcKimlik_1_2.setBounds(10, 55, 124, 14);
-								panel_5_4_2.add(lblTcKimlik_1_2);
-								
-								JLabel lblDoumTarihi_1_2 = new JLabel("Doğum Tarihi");
-								lblDoumTarihi_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumTarihi_1_2.setBounds(10, 85, 124, 22);
-								panel_5_4_2.add(lblDoumTarihi_1_2);
-								
-								JLabel lblDoumYeri_1_2 = new JLabel("Doğum Yeri");
-								lblDoumYeri_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblDoumYeri_1_2.setBounds(10, 115, 124, 17);
-								panel_5_4_2.add(lblDoumYeri_1_2);
-								
-								JLabel lblCinsiyeti_1_1 = new JLabel("Cinsiyeti");
-								lblCinsiyeti_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblCinsiyeti_1_1.setBounds(10, 145, 124, 14);
-								panel_5_4_2.add(lblCinsiyeti_1_1);
-								
-								JComboBox cboxPKCinsiyet = new JComboBox();
-								cboxPKCinsiyet.setBounds(144, 145, 179, 22);
-								panel_5_4_2.add(cboxPKCinsiyet);
-								
-								textField_31 = new JTextField();
-								textField_31.setColumns(10);
-								textField_31.setBounds(144, 23, 179, 20);
-								panel_5_4_2.add(textField_31);
-								
-								textField_32 = new JTextField();
-								textField_32.setColumns(10);
-								textField_32.setBounds(144, 55, 179, 20);
-								panel_5_4_2.add(textField_32);
-								
-								textField_33 = new JTextField();
-								textField_33.setColumns(10);
-								textField_33.setBounds(144, 85, 179, 20);
-								panel_5_4_2.add(textField_33);
-								
-								textField_34 = new JTextField();
-								textField_34.setColumns(10);
-								textField_34.setBounds(144, 115, 179, 20);
-								panel_5_4_2.add(textField_34);
-								
-								JPanel panel_5_6_1 = new JPanel();
-								panel_5_6_1.setLayout(null);
-								panel_5_6_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130leti\u015Fim Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_6_1.setBounds(405, 0, 390, 182);
-								panel_3.add(panel_5_6_1);
-								
-								JLabel lblAdres_1_1 = new JLabel("Adres");
-								lblAdres_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblAdres_1_1.setBounds(10, 25, 124, 14);
-								panel_5_6_1.add(lblAdres_1_1);
-								
-								JTextArea txtPKAdres = new JTextArea();
-								txtPKAdres.setBounds(105, 25, 179, 68);
-								panel_5_6_1.add(txtPKAdres);
-								
-								JLabel lblTelefonNumaras_1_2 = new JLabel("Telefon No");
-								lblTelefonNumaras_1_2.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTelefonNumaras_1_2.setBounds(10, 102, 85, 22);
-								panel_5_6_1.add(lblTelefonNumaras_1_2);
-								
-								textField_35 = new JTextField();
-								textField_35.setColumns(10);
-								textField_35.setBounds(105, 104, 179, 20);
-								panel_5_6_1.add(textField_35);
-								
-								JLabel lblTelefonNumaras_1_1_1 = new JLabel("E Mail");
-								lblTelefonNumaras_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblTelefonNumaras_1_1_1.setBounds(10, 145, 85, 22);
-								panel_5_6_1.add(lblTelefonNumaras_1_1_1);
-								
-								textField_36 = new JTextField();
-								textField_36.setColumns(10);
-								textField_36.setBounds(105, 147, 179, 20);
-								panel_5_6_1.add(textField_36);
-								
-								JButton btnPKKaydet = new JButton("Kaydet");
-								btnPKKaydet.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnPKKaydet.setBounds(145, 317, 123, 27);
-								panel_3.add(btnPKKaydet);
-								
-								JButton btnPKGuncelle = new JButton("Güncelle");
-								btnPKGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnPKGuncelle.setBounds(311, 317, 123, 27);
-								panel_3.add(btnPKGuncelle);
-								
-								JPanel panel_5_3_1_1 = new JPanel();
-								panel_5_3_1_1.setLayout(null);
-								panel_5_3_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130\u015F Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_3_1_1.setBounds(0, 181, 792, 111);
-								panel_3.add(panel_5_3_1_1);
-								
-								JLabel lblizin_1 = new JLabel("Toplam İzin Günü");
-								lblizin_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblizin_1.setBounds(10, 25, 137, 14);
-								panel_5_3_1_1.add(lblizin_1);
-								
-								JLabel lblKullanlabilirIzinGn_1 = new JLabel("Kullanılabilir İzin Günü");
-								lblKullanlabilirIzinGn_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKullanlabilirIzinGn_1.setBounds(10, 64, 137, 14);
-								panel_5_3_1_1.add(lblKullanlabilirIzinGn_1);
-								
-								JLabel lblKullanlmIzinGn_1 = new JLabel("Kullanılmış İzin Günü");
-								lblKullanlmIzinGn_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKullanlmIzinGn_1.setBounds(305, 25, 137, 14);
-								panel_5_3_1_1.add(lblKullanlmIzinGn_1);
-								
-								textField_37 = new JTextField();
-								textField_37.setColumns(10);
-								textField_37.setBounds(158, 23, 106, 20);
-								panel_5_3_1_1.add(textField_37);
-								
-								textField_38 = new JTextField();
-								textField_38.setEditable(false);
-								textField_38.setColumns(10);
-								textField_38.setBounds(157, 62, 106, 20);
-								panel_5_3_1_1.add(textField_38);
-								
-								textField_39 = new JTextField();
-								textField_39.setEditable(false);
-								textField_39.setColumns(10);
-								textField_39.setBounds(452, 23, 106, 20);
-								panel_5_3_1_1.add(textField_39);
-								
-								JLabel lblIzinKullan_1_1 = new JLabel("Çalışma Saatleri");
-								lblIzinKullan_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblIzinKullan_1_1.setBounds(568, 25, 100, 14);
-								panel_5_3_1_1.add(lblIzinKullan_1_1);
-								
-								textField_40 = new JTextField();
-								textField_40.setColumns(10);
-								textField_40.setBounds(678, 20, 106, 20);
-								panel_5_3_1_1.add(textField_40);
-								
-								JLabel lblKullanlabilirIzinGn_1_1 = new JLabel("Görev Tanımı");
-								lblKullanlabilirIzinGn_1_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								lblKullanlabilirIzinGn_1_1.setBounds(305, 66, 137, 14);
-								panel_5_3_1_1.add(lblKullanlabilirIzinGn_1_1);
-								
-								JComboBox cboxPKGTanimi = new JComboBox();
-								cboxPKGTanimi.setBounds(452, 61, 106, 22);
-								panel_5_3_1_1.add(cboxPKGTanimi);
-								
-								JButton btnPKIzinKullan = new JButton("İzin Kullan");
-								btnPKIzinKullan.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnPKIzinKullan.setBounds(638, 317, 123, 27);
-								panel_3.add(btnPKIzinKullan);
-								
-								JButton btnPKSil = new JButton("Sil");
-								btnPKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnPKSil.setBounds(478, 317, 123, 27);
-								panel_3.add(btnPKSil);
-								//Personel Kayıt Panel End
-								//Randevu Panel Start		
-								JPanel RandevuPanel = new JPanel();
-								tabbedPane.addTab("Randevu Sistemi", null, RandevuPanel, null);
-								RandevuPanel.setLayout(null);
-								
-								JPanel panel_2_1 = new JPanel();
-								panel_2_1.setBounds(0, 0, 1000, 376);
-								RandevuPanel.add(panel_2_1);
-								panel_2_1.setLayout(null);
-								
-								JPanel panel_5_4_1 = new JPanel();
-								panel_5_4_1.setLayout(null);
-								panel_5_4_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Randevu Al", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_4_1.setBounds(0, 0, 333, 376);
-								panel_2_1.add(panel_5_4_1);
-								
-								JLabel lblNewLabel_1_1 = new JLabel("Polikinlik");
-								lblNewLabel_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblNewLabel_1_1.setBounds(10, 25, 94, 14);
-								panel_5_4_1.add(lblNewLabel_1_1);
-								
-								JLabel lblTcKimlik_1_1 = new JLabel("Doktor");
-								lblTcKimlik_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblTcKimlik_1_1.setBounds(10, 71, 87, 14);
-								panel_5_4_1.add(lblTcKimlik_1_1);
-								
-								JLabel lblDoumTarihi_1_1 = new JLabel("Hasta T.C");
-								lblDoumTarihi_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumTarihi_1_1.setBounds(10, 122, 80, 22);
-								panel_5_4_1.add(lblDoumTarihi_1_1);
-								
-								JLabel lblDoumYeri_1_1 = new JLabel("Tarih");
-								lblDoumYeri_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1.setBounds(10, 173, 68, 22);
-								panel_5_4_1.add(lblDoumYeri_1_1);
-								
-								txtRSALHastaTc = new JTextField();
-								txtRSALHastaTc.setColumns(10);
-								txtRSALHastaTc.setBounds(112, 125, 179, 20);
-								panel_5_4_1.add(txtRSALHastaTc);
-								
-								dcRSALTarih = new JDateChooser();
-								dcRSALTarih.setBounds(112, 173, 179, 21);
-								panel_5_4_1.add(dcRSALTarih);
-								
-								JComboBox cboxRSALPolikinlik = new JComboBox();
-								cboxRSALPolikinlik.setBounds(112, 23, 179, 22);
-								panel_5_4_1.add(cboxRSALPolikinlik);
-								
-								JButton btnRSAl = new JButton("Randevu Al");
-								btnRSAl.setBounds(112, 314, 123, 27);
-								panel_5_4_1.add(btnRSAl);
-								btnRSAl.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								
-								JComboBox cboxRSALDoktorAdi = new JComboBox();
-								cboxRSALDoktorAdi.setBounds(112, 69, 179, 22);
-								panel_5_4_1.add(cboxRSALDoktorAdi);
-								
-								JLabel lblDoumYeri_1_1_2 = new JLabel("Saat");
-								lblDoumYeri_1_1_2.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_2.setBounds(10, 227, 68, 22);
-								panel_5_4_1.add(lblDoumYeri_1_1_2);
-								
-								JComboBox cboxRSALSaat = new JComboBox();
-								cboxRSALSaat.setBounds(112, 229, 179, 22);
-								panel_5_4_1.add(cboxRSALSaat);
-								panel_5_4_1_1.setBounds(327, 0, 333, 376);
-								panel_2_1.add(panel_5_4_1_1);
-								panel_5_4_1_1.setLayout(null);
-								panel_5_4_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Randevu Sil", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								
-								JLabel lblDoumTarihi_1_1_1 = new JLabel("Hasta T.C");
-								lblDoumTarihi_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumTarihi_1_1_1.setBounds(10, 25, 88, 22);
-								panel_5_4_1_1.add(lblDoumTarihi_1_1_1);
-								
-								textField_4 = new JTextField();
-								textField_4.setColumns(10);
-								textField_4.setBounds(112, 25, 103, 20);
-								panel_5_4_1_1.add(textField_4);
-								
-								JButton btnRSSil = new JButton("Randevu Sil");
-								btnRSSil.setBounds(112, 314, 123, 27);
-								panel_5_4_1_1.add(btnRSSil);
-								btnRSSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								
-								JButton btnAra = new JButton("Ara");
-								btnAra.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnAra.setBounds(222, 25, 69, 20);
-								panel_5_4_1_1.add(btnAra);
-								
-								JComboBox cboxRSSilRandevular = new JComboBox();
-								cboxRSSilRandevular.setBounds(112, 71, 179, 22);
-								panel_5_4_1_1.add(cboxRSSilRandevular);
-								
-								JLabel lblNewLabel_1_1_1 = new JLabel("Randevular");
-								lblNewLabel_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblNewLabel_1_1_1.setBounds(10, 71, 96, 14);
-								panel_5_4_1_1.add(lblNewLabel_1_1_1);
-								
-								JPanel panel_5_4_1_1_1 = new JPanel();
-								panel_5_4_1_1_1.setLayout(null);
-								panel_5_4_1_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Randevu G\u00FCncelle", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-								panel_5_4_1_1_1.setBounds(657, 0, 333, 376);
-								panel_2_1.add(panel_5_4_1_1_1);
-								
-								JLabel lblDoumTarihi_1_1_1_1 = new JLabel("Hasta T.C");
-								lblDoumTarihi_1_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumTarihi_1_1_1_1.setBounds(10, 25, 96, 22);
-								panel_5_4_1_1_1.add(lblDoumTarihi_1_1_1_1);
-								
-								textField_2 = new JTextField();
-								textField_2.setColumns(10);
-								textField_2.setBounds(112, 25, 103, 20);
-								panel_5_4_1_1_1.add(textField_2);
-								
-								JButton btnRandevuGncelle = new JButton("Randevu Güncelle");
-								btnRandevuGncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnRandevuGncelle.setBounds(97, 314, 169, 27);
-								panel_5_4_1_1_1.add(btnRandevuGncelle);
-								
-								JButton btnAra_1 = new JButton("Ara");
-								btnAra_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-								btnAra_1.setBounds(225, 24, 69, 20);
-								panel_5_4_1_1_1.add(btnAra_1);
-								
-								JComboBox cboxRSSGuncelleRandevular_1 = new JComboBox();
-								cboxRSSGuncelleRandevular_1.setBounds(112, 67, 179, 22);
-								panel_5_4_1_1_1.add(cboxRSSGuncelleRandevular_1);
-								
-								JLabel lblNewLabel_1_1_1_1 = new JLabel("Randevular");
-								lblNewLabel_1_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblNewLabel_1_1_1_1.setBounds(10, 69, 96, 14);
-								panel_5_4_1_1_1.add(lblNewLabel_1_1_1_1);
-								
-								JDateChooser dcRSALTarih_1 = new JDateChooser();
-								dcRSALTarih_1.setBounds(115, 173, 179, 21);
-								panel_5_4_1_1_1.add(dcRSALTarih_1);
-								
-								JLabel lblDoumYeri_1_1_1 = new JLabel("Tarih");
-								lblDoumYeri_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_1.setBounds(10, 173, 68, 22);
-								panel_5_4_1_1_1.add(lblDoumYeri_1_1_1);
-								
-								JLabel lblTcKimlik_1_1_1 = new JLabel("Doktor");
-								lblTcKimlik_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblTcKimlik_1_1_1.setBounds(10, 120, 87, 14);
-								panel_5_4_1_1_1.add(lblTcKimlik_1_1_1);
-								
-								JComboBox cboxRSGuncelleDoktorAdi_1 = new JComboBox();
-								cboxRSGuncelleDoktorAdi_1.setBounds(112, 118, 179, 22);
-								panel_5_4_1_1_1.add(cboxRSGuncelleDoktorAdi_1);
-								
-								JComboBox cboxRSGuncelleSaat_1 = new JComboBox();
-								cboxRSGuncelleSaat_1.setBounds(112, 227, 179, 22);
-								panel_5_4_1_1_1.add(cboxRSGuncelleSaat_1);
-								
-								JLabel lblDoumYeri_1_1_2_1 = new JLabel("Saat");
-								lblDoumYeri_1_1_2_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-								lblDoumYeri_1_1_2_1.setBounds(10, 225, 68, 22);
-								panel_5_4_1_1_1.add(lblDoumYeri_1_1_2_1);
-								
-								JPanel panel_8_2 = new JPanel();
-								panel_8_2.setLayout(null);
-								panel_8_2.setBounds(0, 0, 188, 376);
-								RandevuPanel.add(panel_8_2);
-								//Randevu Panel End
 							}
 						}
 						
@@ -1330,8 +1518,10 @@ public class MainFrame extends JFrame {
 		JButton btnKaytOl = new JButton("Kayıt Ol");
 		btnKaytOl.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Login ll = new Login();
-				ll.setVisible(true);
+				Register reg = new Register();
+				reg.setVisible(true);
+				txtGirisPassword.setText("");
+				txtgirisTc.setText("");
 			}
 		});
 		btnKaytOl.setFont(new Font("Tahoma", Font.BOLD, 17));
