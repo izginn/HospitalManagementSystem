@@ -2,6 +2,7 @@ package Main;
 
 import java.awt.EventQueue;
 
+import Class.Appointment;
 import Class.Doctor;
 import Class.EmergencyPatient;
 import Class.Member;
@@ -82,8 +83,8 @@ public class MainFrame extends JFrame {
 	private JTextField txtASekg;
 	private JTextField txtAStc;
 	private final JPanel panel_5_4_1_1 = new JPanel();
-	private JTextField textField_4;
-	private JTextField textField_2;
+	private JTextField txtRsSilTc;
+	private JTextField txtRSGunTc;
 	private Connection c;
 	private Statement s;
 	private JTextField txtgirisTc;
@@ -120,6 +121,8 @@ public class MainFrame extends JFrame {
 	private JTextField textField_3;
 	private JTextField txtHkSonGun;
 	private JTextField txtHkDogTar;
+	private JTextField txtRsAlTarih;
+	private JTextField txtRsGunTarih;
 //DB Connection Start
 	public void getConnection() throws ClassNotFoundException, SQLException {		
 		c = DriverManager.getConnection("jdbc:postgresql://localhost:5432/DbHospitalManagementSystem", "postgres", "bdroomay6715");
@@ -138,6 +141,46 @@ public class MainFrame extends JFrame {
 				}
 			}
 		});
+	}
+	public void listCombo(JComboBox comboBox,String str) {
+		String sql1 = "SELECT \"RandevuKodu\",\"DoktorAdi\", \"Tarih\" FROM public.\"Appointment\" where \"Tc\"='"+str+"';";
+		ResultSet rs;		
+		try {
+			rs = s.executeQuery(sql1);
+			int rc = 0;
+			ArrayList<String> a=new ArrayList<>();
+			while (rs.next()) {
+				int rkodu = rs.getInt("RandevuKodu");
+				String dadi = rs.getString("DoktorAdi");
+				String tarih = rs.getString("Tarih");
+				a.add(dadi+" "+tarih);				
+				rc++;
+			}
+			Object s[]=a.toArray();
+			comboBox.setModel(new DefaultComboBoxModel(s));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public void listDoktor(JComboBox cbox,Integer ab) {
+		String sql1 = "SELECT \"Ad\" FROM public.\"Doctor\" Where \"PolId\" = "+ab+";";
+		ResultSet rs;		
+		try {
+			rs = s.executeQuery(sql1);
+			int rc = 0;
+			ArrayList<String> a=new ArrayList<>();
+			while (rs.next()) {
+				String name = rs.getString("Ad");
+				a.add(name);				
+				rc++;
+			}
+			Object s[]=a.toArray();
+			cbox.setModel(new DefaultComboBoxModel(s));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			}
 	}
 	
 	public void searchNodeRecursive(DefaultMutableTreeNode node, String searchQuery) {
@@ -170,7 +213,24 @@ public class MainFrame extends JFrame {
         parent.add(newFolder);
         return newFolder;
     }
-
+	
+    public void Delete(JPanel panel,String TabloAdi) {
+    	String DelTc=JOptionPane.showInputDialog(panel,"Silmek istediğiniz kişinin Tc Kimlik numarasını Giriniz");
+		if(DelTc!=null) {
+			int reply = JOptionPane.showConfirmDialog(panel, ""+DelTc+" Kimlik numaralı kişiyi silmek istiyorsunuz Emin misiniz?", "Emin misiniz?", JOptionPane.YES_NO_OPTION);
+			if (reply == JOptionPane.YES_OPTION) {
+				try {
+					String Sql1="DELETE FROM public.\""+TabloAdi+"\" WHERE \"Tc\"= '"+DelTc+"';";
+					int rs= s.executeUpdate(Sql1);
+					if (rs==1) {
+						JOptionPane.showMessageDialog(panel, "Kişi başarılı bir şekilde silindi");
+					}
+				} catch (Exception e2) {
+					// TODO: handle exception
+				}
+			} 
+		}
+    }
 	public MainFrame() {
 
 		setBackground(new Color(196, 196, 196));
@@ -313,6 +373,11 @@ public class MainFrame extends JFrame {
     		panel_8.add(tree_1_2);
     		
     		JButton btnHKAra = new JButton("Ara");
+    		btnHKAra.addActionListener(new ActionListener() {
+    			public void actionPerformed(ActionEvent e) {
+    				searchNode(tree_1_2,txtHKArama.getText());
+    			}
+    		});
     		btnHKAra.setBounds(102, 0, 86, 20);
     		panel_8.add(btnHKAra);
 		} catch (Exception e) {
@@ -548,12 +613,17 @@ public class MainFrame extends JFrame {
 		cboxHKTedaviSekli.setModel(new DefaultComboBoxModel(new String[] {"Ayakta", "Yatarak"}));
 		cboxHKTedaviSekli.setBounds(418, 22, 106, 22);
 		panel_5_3.add(cboxHKTedaviSekli);
-		
+		//Hasta Delete Start
 		JButton btnHKSil = new JButton("Sil");
+		btnHKSil.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Delete(HastaKayitPanel,"Patient");
+			}
+		});
 		btnHKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnHKSil.setBounds(524, 338, 123, 27);
 		panel.add(btnHKSil);
-		
+		//Hasta Delete End
 		JButton btnGuncelleHasta = new JButton("Güncelle");
 		btnGuncelleHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnGuncelleHasta.setBounds(356, 338, 123, 27);
@@ -782,6 +852,16 @@ public class MainFrame extends JFrame {
 					int den=prep.executeUpdate();
 					if (den==1) {
 						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+						txtASgecmis.setText("");
+						txtASilac.setText("");
+						txtAStani.setText("");
+						txtASates.setText("");
+						txtASekg.setText("");
+						txtAShastaAdi.setText("");
+						txtASnabiz.setText("");
+						txtASsuur.setText("");
+						txtAStc.setText("");
+						cboxASRenkId.setSelectedIndex(0);
 					}
 				} catch (SQLException e3) {
 					// TODO Auto-generated catch block
@@ -798,29 +878,78 @@ public class MainFrame extends JFrame {
 		btnASGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnASGuncelle.setBounds(352, 307, 123, 27);
 		panel_2_1_1.add(btnASGuncelle);
-		
+		//Acil Servis Hasta Silme Start
 		JButton btnSil = new JButton("Sil");
+		btnSil.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Delete(AcilServisPanel,"EmergencyPatient");
+			}
+		});
 		btnSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnSil.setBounds(513, 307, 123, 27);
 		panel_2_1_1.add(btnSil);
-		
+		//Acil Servis Hasta Silme End
 		JPanel panel_8_4_1 = new JPanel();
 		panel_8_4_1.setLayout(null);
 		panel_8_4_1.setBounds(0, 0, 188, 376);
 		AcilServisPanel.add(panel_8_4_1);
 		
-		JButton btnHasAra_1_1_2_1 = new JButton("Ara");
-		btnHasAra_1_1_2_1.setBounds(102, 0, 86, 21);
-		panel_8_4_1.add(btnHasAra_1_1_2_1);
-		
 		textField_3 = new JTextField();
 		textField_3.setColumns(10);
 		textField_3.setBounds(0, 0, 101, 21);
 		panel_8_4_1.add(textField_3);
+		//Jtree Patient
+		try {
+            // SQL sorgusu
+	    	String sql="SELECT \"Adi\", \"Tc\", \"RenkId\" FROM public.\"EmergencyPatient\";";
+
+            // Sorguyu çalıştırma
+            ResultSet resultSet = s.executeQuery(sql);
+
+            // JTree kök düğümü
+            DefaultMutableTreeNode Acilroot = new DefaultMutableTreeNode("Acil Hastalar");
+
+            // Verileri JTree'e ekleme
+            while (resultSet.next()) {
+            	String Tc= resultSet.getString("Tc");
+                int RenkId = resultSet.getInt("RenkId");
+                String ad = resultSet.getString("Adi");
+             // Veriyi ilgili klasöre yerleştirme
+                DefaultMutableTreeNode klasorNode;
+                switch (RenkId) {
+                    case 1:
+                        klasorNode = findOrCreateFolder(Acilroot, "Kırmızı");
+                        break;
+                    case 2:
+                        klasorNode = findOrCreateFolder(Acilroot, "Sarı");
+                        break;
+                    case 3:
+                        klasorNode = findOrCreateFolder(Acilroot,"Yeşil");
+                        break;
+                   
+                    default:
+                        continue;
+                }
+
+                DefaultMutableTreeNode Verinodes = new DefaultMutableTreeNode(ad);
+                klasorNode.add(Verinodes); 
+            }
+            JTree tree_1_2_2_1 = new JTree(Acilroot);
+    		tree_1_2_2_1.setBounds(0, 22, 188, 355);
+    		panel_8_4_1.add(tree_1_2_2_1);
+    		
+    		JButton btnHasAra_1_1_2_1 = new JButton("Ara");
+    		btnHasAra_1_1_2_1.addActionListener(new ActionListener() {
+    			public void actionPerformed(ActionEvent e) {
+    			}
+    		});
+    		btnHasAra_1_1_2_1.setBounds(102, 0, 86, 21);
+    		panel_8_4_1.add(btnHasAra_1_1_2_1);
+            }catch (Exception e) {
+				// TODO: handle exception
+			
+            }
 		
-		JTree tree_1_2_2_1 = new JTree();
-		tree_1_2_2_1.setBounds(0, 22, 188, 355);
-		panel_8_4_1.add(tree_1_2_2_1);
 		
 		//Acil Servis Panel End
 		
@@ -1041,12 +1170,17 @@ public class MainFrame extends JFrame {
 		btnGncelleDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnGncelleDoktor.setBounds(301, 321, 123, 27);
 		panel_1.add(btnGncelleDoktor);
-		
+		//Doktor Sil Start
 		JButton btnDKSil = new JButton("Sil");
+		btnDKSil.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Delete(DoktorKayitPanel,"Doctor");
+			}
+		});
 		btnDKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnDKSil.setBounds(457, 321, 123, 27);
 		panel_1.add(btnDKSil);
-		
+		//Doktor Sil End
 		JButton btnDKIzinKullan = new JButton("İzin Kullan");
 		btnDKIzinKullan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -1063,18 +1197,83 @@ public class MainFrame extends JFrame {
 		panel_8_1.setBounds(0, 0, 188, 376);
 		DoktorKayitPanel.add(panel_8_1);
 		
-		JButton btnHasAra_1_1_1 = new JButton("Ara");
-		btnHasAra_1_1_1.setBounds(102, 0, 86, 21);
-		panel_8_1.add(btnHasAra_1_1_1);
-		
 		textField_30 = new JTextField();
 		textField_30.setColumns(10);
 		textField_30.setBounds(0, 0, 101, 21);
 		panel_8_1.add(textField_30);
+		try {
+            // SQL sorgusu
+	    	String sql="SELECT \"Ad\", \"Tc\",\"PolId\" FROM public.\"Doctor\";";
+
+            // Sorguyu çalıştırma
+            ResultSet resultSet = s.executeQuery(sql);
+
+            // JTree kök düğümü
+            DefaultMutableTreeNode rootDoktor = new DefaultMutableTreeNode("Doktorlar");
+
+            // Verileri JTree'e ekleme
+            while (resultSet.next()) {
+            	String Tc= resultSet.getString("Tc");
+                int PolId = resultSet.getInt("PolId");
+                String ad = resultSet.getString("Ad");
+             // Veriyi ilgili klasöre yerleştirme
+                DefaultMutableTreeNode klasorNode;
+                switch (PolId) {
+                    case 1:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Fiziksel Tıp ve Rahabilitasyon");
+                        break;
+                    case 2:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Kalp ve Damar Cerrahisi");
+                        break;
+                    case 3:
+                        klasorNode = findOrCreateFolder(rootDoktor,"Kardiyoloji");
+                        break;
+                    case 4:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Kulak Burun Boğaz");
+                        break;
+                    case 5:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Radyoloji");
+                        break;
+                    case 6:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Üroloji");
+                        break;
+                    case 7:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Beyin ve Sinir Cerrahisi");
+                        break;
+                    case 8:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Gastroenteroloji");
+                        break;
+                    case 9:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Genel Cerrahi");
+                        break;
+                    case 10:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Göz Hastalıkları");
+                        break;
+                    case 11:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Psikiyatri");
+                        break;
+                    default:
+                        continue;
+                }
+
+                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
+                klasorNode.add(veriNode);
+            }
+
+            // JTree'i oluşturma ve gösterme
+            JButton btnDoktorAra = new JButton("Ara");
+    		btnDoktorAra.setBounds(102, 0, 86, 21);
+    		panel_8_1.add(btnDoktorAra);
+    		
+    		
+    		
+    		JTree tree_1_2_1 = new JTree(rootDoktor);
+    		tree_1_2_1.setBounds(0, 22, 188, 355);
+    		panel_8_1.add(tree_1_2_1);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
 		
-		JTree tree_1_2_1 = new JTree();
-		tree_1_2_1.setBounds(0, 22, 188, 355);
-		panel_8_1.add(tree_1_2_1);
 		
 		//Doktor Kayıt Panel End
 		//Personel Kayıt Panel Start
@@ -1092,18 +1291,66 @@ public class MainFrame extends JFrame {
 		panel_8_4.setBounds(0, 0, 188, 376);
 		panel_3_1.add(panel_8_4);
 		
-		JButton btnHasAra_1_1_2 = new JButton("Ara");
-		btnHasAra_1_1_2.setBounds(102, 0, 86, 21);
-		panel_8_4.add(btnHasAra_1_1_2);
+		
 		
 		textField_19 = new JTextField();
 		textField_19.setColumns(10);
 		textField_19.setBounds(0, 0, 101, 21);
 		panel_8_4.add(textField_19);
 		
-		JTree tree_1_2_2 = new JTree();
-		tree_1_2_2.setBounds(0, 22, 188, 355);
-		panel_8_4.add(tree_1_2_2);
+		
+		
+		try {
+            // SQL sorgusu
+	    	String sql="SELECT \"Ad\", \"Tc\",\"GorevId\" FROM public.\"Personel\";";
+
+            // Sorguyu çalıştırma
+            ResultSet resultSet = s.executeQuery(sql);
+
+            // JTree kök düğümü
+            DefaultMutableTreeNode rootPersonel = new DefaultMutableTreeNode("Personeller");
+
+            // Verileri JTree'e ekleme
+            while (resultSet.next()) {
+            	String Tc= resultSet.getString("Tc");
+                int GorevId = resultSet.getInt("GorevId");
+                String ad = resultSet.getString("Ad");
+             // Veriyi ilgili klasöre yerleştirme
+                DefaultMutableTreeNode klasorNode;
+                switch (GorevId) {
+                    case 1:
+                        klasorNode = findOrCreateFolder(rootPersonel, "Güvenlik Görevlisi");
+                        break;
+                    case 2:
+                        klasorNode = findOrCreateFolder(rootPersonel, "Hasta Bakıcı");
+                        break;
+                    case 3:
+                        klasorNode = findOrCreateFolder(rootPersonel,"Temizlik Görevlisi");
+                        break; 
+                    case 4:
+                        klasorNode = findOrCreateFolder(rootPersonel,"İdari İşler");
+                        break; 
+                    default:
+                        continue;
+                }
+
+                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
+                klasorNode.add(veriNode);
+            }
+
+            // JTree'i oluşturma ve gösterme
+            JButton btnPersonelAra = new JButton("Ara");
+    		btnPersonelAra.setBounds(102, 0, 86, 21);
+    		panel_8_4.add(btnPersonelAra);
+    		
+    		
+    		
+    		JTree tree_1_2_2 = new JTree(rootPersonel);
+    		tree_1_2_2.setBounds(0, 22, 188, 355);
+    		panel_8_4.add(tree_1_2_2);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
 		
 		JPanel panel_3 = new JPanel();
 		panel_3.setBounds(198, 0, 802, 376);
@@ -1295,11 +1542,18 @@ public class MainFrame extends JFrame {
 		panel_3.add(btnPKIzinKullan);
 		
 		JButton btnPKSil = new JButton("Sil");
+		btnPKSil.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Delete(PersonelKayitPanel,"Personel");
+			}
+		});
 		btnPKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnPKSil.setBounds(478, 317, 123, 27);
 		panel_3.add(btnPKSil);
+		
 		//Personel Kayıt Panel End
-		//Randevu Panel Start		
+		//Randevu Panel Start	
+		
 		JPanel RandevuPanel = new JPanel();
 		tabbedPane.addTab("Randevu Sistemi", null, RandevuPanel, null);
 		RandevuPanel.setLayout(null);
@@ -1330,9 +1584,9 @@ public class MainFrame extends JFrame {
 		lblDoumTarihi_1_1.setBounds(10, 122, 80, 22);
 		panel_5_4_1.add(lblDoumTarihi_1_1);
 		
-		JLabel lblDoumYeri_1_1 = new JLabel("Tarih");
+		JLabel lblDoumYeri_1_1 = new JLabel("Tarih ve Saat");
 		lblDoumYeri_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		lblDoumYeri_1_1.setBounds(10, 173, 68, 22);
+		lblDoumYeri_1_1.setBounds(10, 173, 94, 22);
 		panel_5_4_1.add(lblDoumYeri_1_1);
 		
 		txtRSALHastaTc = new JTextField();
@@ -1343,28 +1597,12 @@ public class MainFrame extends JFrame {
 		
 		JComboBox cboxRSALPolikinlik = new JComboBox();
 		cboxRSALPolikinlik.setModel(new DefaultComboBoxModel(new String[] {"Fiziksel Tıp ve Rehabilitasyon", "Kalp ve Damar Cerrahisi", "Kardiyoloji", "Kulak Burun Boğaz", "Radyoloji", "Üroloji", "Beyin ve Sinir Cerrahisi", "Gastroenteroloji", "Genel Cerrahi", "Göz Hastalıkları", "Psikiyatri"}));
-		cboxRSALPolikinlik.setBounds(112, 23, 179, 22);
+		cboxRSALPolikinlik.setBounds(114, 23, 112, 22);
 		panel_5_4_1.add(cboxRSALPolikinlik);
 		
-		JButton btnRSAl = new JButton("Randevu Al");
-		btnRSAl.setBounds(112, 314, 123, 27);
-		panel_5_4_1.add(btnRSAl);
-		btnRSAl.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		
 		JComboBox cboxRSALDoktorAdi = new JComboBox();
-		cboxRSALDoktorAdi.setModel(new DefaultComboBoxModel(new String[] {"Buraya Doktor Adlarını Getir"}));
 		cboxRSALDoktorAdi.setBounds(112, 69, 179, 22);
 		panel_5_4_1.add(cboxRSALDoktorAdi);
-		
-		JLabel lblDoumYeri_1_1_2 = new JLabel("Saat");
-		lblDoumYeri_1_1_2.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		lblDoumYeri_1_1_2.setBounds(10, 227, 68, 22);
-		panel_5_4_1.add(lblDoumYeri_1_1_2);
-		
-		JComboBox cboxRSALSaat = new JComboBox();
-		cboxRSALSaat.setModel(new DefaultComboBoxModel(new String[] {"Buraya Randevu Saatlerini Getir"}));
-		cboxRSALSaat.setBounds(112, 229, 179, 22);
-		panel_5_4_1.add(cboxRSALSaat);
 		panel_5_4_1_1.setBounds(327, 0, 333, 376);
 		panel_2_1.add(panel_5_4_1_1);
 		panel_5_4_1_1.setLayout(null);
@@ -1375,29 +1613,20 @@ public class MainFrame extends JFrame {
 		lblDoumTarihi_1_1_1.setBounds(10, 25, 88, 22);
 		panel_5_4_1_1.add(lblDoumTarihi_1_1_1);
 		
-		textField_4 = new JTextField();
-		textField_4.setColumns(10);
-		textField_4.setBounds(112, 25, 103, 20);
-		panel_5_4_1_1.add(textField_4);
+		txtRsSilTc = new JTextField();
+		txtRsSilTc.setColumns(10);
+		txtRsSilTc.setBounds(112, 25, 103, 20);
+		panel_5_4_1_1.add(txtRsSilTc);
 		
-		JButton btnRSSil = new JButton("Randevu Sil");
-		btnRSSil.setBounds(112, 314, 123, 27);
-		panel_5_4_1_1.add(btnRSSil);
-		btnRSSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		
-		JButton btnAra = new JButton("Ara");
-		btnAra.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnAra.setBounds(222, 25, 69, 20);
-		panel_5_4_1_1.add(btnAra);
 		
 		JComboBox cboxRSSilRandevular = new JComboBox();
-		cboxRSSilRandevular.setModel(new DefaultComboBoxModel(new String[] {"Buraya Alınan Randevuları Getir "}));
-		cboxRSSilRandevular.setBounds(112, 71, 179, 22);
+		cboxRSSilRandevular.setBounds(112, 107, 179, 22);
 		panel_5_4_1_1.add(cboxRSSilRandevular);
 		
 		JLabel lblNewLabel_1_1_1 = new JLabel("Randevular");
 		lblNewLabel_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		lblNewLabel_1_1_1.setBounds(10, 71, 96, 14);
+		lblNewLabel_1_1_1.setBounds(10, 107, 96, 14);
 		panel_5_4_1_1.add(lblNewLabel_1_1_1);
 		
 		JPanel panel_5_4_1_1_1 = new JPanel();
@@ -1411,23 +1640,19 @@ public class MainFrame extends JFrame {
 		lblDoumTarihi_1_1_1_1.setBounds(10, 25, 96, 22);
 		panel_5_4_1_1_1.add(lblDoumTarihi_1_1_1_1);
 		
-		textField_2 = new JTextField();
-		textField_2.setColumns(10);
-		textField_2.setBounds(112, 25, 103, 20);
-		panel_5_4_1_1_1.add(textField_2);
+		txtRSGunTc = new JTextField();
+		txtRSGunTc.setColumns(10);
+		txtRSGunTc.setBounds(112, 25, 103, 20);
+		panel_5_4_1_1_1.add(txtRSGunTc);
 		
 		JButton btnRandevuGncelle = new JButton("Randevu Güncelle");
 		btnRandevuGncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnRandevuGncelle.setBounds(97, 314, 169, 27);
 		panel_5_4_1_1_1.add(btnRandevuGncelle);
 		
-		JButton btnAra_1 = new JButton("Ara");
-		btnAra_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnAra_1.setBounds(225, 24, 69, 20);
-		panel_5_4_1_1_1.add(btnAra_1);
+		
 		
 		JComboBox cboxRSSGuncelleRandevular_1 = new JComboBox();
-		cboxRSSGuncelleRandevular_1.setModel(new DefaultComboBoxModel(new String[] {"Buraya Alınan Randevuları Getir"}));
 		cboxRSSGuncelleRandevular_1.setBounds(112, 67, 179, 22);
 		panel_5_4_1_1_1.add(cboxRSSGuncelleRandevular_1);
 		
@@ -1437,9 +1662,9 @@ public class MainFrame extends JFrame {
 		panel_5_4_1_1_1.add(lblNewLabel_1_1_1_1);
 		
 		
-		JLabel lblDoumYeri_1_1_1 = new JLabel("Tarih");
+		JLabel lblDoumYeri_1_1_1 = new JLabel("Tarih ve Saat");
 		lblDoumYeri_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		lblDoumYeri_1_1_1.setBounds(10, 173, 68, 22);
+		lblDoumYeri_1_1_1.setBounds(10, 173, 96, 22);
 		panel_5_4_1_1_1.add(lblDoumYeri_1_1_1);
 		
 		JLabel lblTcKimlik_1_1_1 = new JLabel("Doktor");
@@ -1447,25 +1672,156 @@ public class MainFrame extends JFrame {
 		lblTcKimlik_1_1_1.setBounds(10, 120, 87, 14);
 		panel_5_4_1_1_1.add(lblTcKimlik_1_1_1);
 		
+		txtRsGunTarih = new JTextField();
+		txtRsGunTarih.setColumns(10);
+		txtRsGunTarih.setBounds(112, 176, 179, 20);
+		panel_5_4_1_1_1.add(txtRsGunTarih);
+		
 		JComboBox cboxRSGuncelleDoktorAdi_1 = new JComboBox();
-		cboxRSGuncelleDoktorAdi_1.setModel(new DefaultComboBoxModel(new String[] {"Buraya Randevunun hangi doktorda olduğunu getir"}));
 		cboxRSGuncelleDoktorAdi_1.setBounds(112, 118, 179, 22);
 		panel_5_4_1_1_1.add(cboxRSGuncelleDoktorAdi_1);
 		
-		JComboBox cboxRSGuncelleSaat_1 = new JComboBox();
-		cboxRSGuncelleSaat_1.setModel(new DefaultComboBoxModel(new String[] {"Buraya alınan randevunun hangi saate alındığını getir"}));
-		cboxRSGuncelleSaat_1.setBounds(112, 227, 179, 22);
-		panel_5_4_1_1_1.add(cboxRSGuncelleSaat_1);
+		JButton btnAra_1 = new JButton("Ara");
+		btnAra_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String str=txtRSGunTc.getText(); 
+				String sql = "SELECT \"RandevuKodu\",\"DoktorAdi\", \"Tarih\" FROM public.\"Appointment\" where \"Tc\"='"+str+"';";
+				ResultSet rs;		
+				try {
+					rs = s.executeQuery(sql);
+					int rc = 0;
+					ArrayList<String> a=new ArrayList<>();
+					ArrayList<String> tarihler=new ArrayList<>();
+					while (rs.next()) {
+						int rkodu = rs.getInt("RandevuKodu");
+						String dadi = rs.getString("DoktorAdi");
+						String tarih = rs.getString("Tarih");
+						a.add(dadi+" "+tarih);	
+						tarihler.add(tarih);
+						rc++;
+					}
+					int aa=cboxRSSGuncelleRandevular_1.getSelectedIndex()+1;
+					String tarih=tarihler.get(aa);
+					txtRsGunTarih.setText(tarih);
+					Object s[]=a.toArray();
+					cboxRSSGuncelleRandevular_1.setModel(new DefaultComboBoxModel(s));
+				} catch (SQLException e2) {
+					// TODO Auto-generated catch block
+					e2.printStackTrace();
+				}	
+				try {
+					String sql1 = "SELECT \"Ad\" FROM public.\"Doctor\";";
+					rs = s.executeQuery(sql1);
+					int rc = 0;
+					ArrayList<String> ab=new ArrayList<>();
+					while (rs.next()) {
+						String name = rs.getString("Ad");
+						ab.add(name);				
+						rc++;
+					}
+					Object s[]=ab.toArray();
+					cboxRSGuncelleDoktorAdi_1.setModel(new DefaultComboBoxModel(s));
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+					}
+			}
+		});
+		btnAra_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnAra_1.setBounds(225, 24, 69, 20);
+		panel_5_4_1_1_1.add(btnAra_1);
 		
-		JLabel lblDoumYeri_1_1_2_1 = new JLabel("Saat");
-		lblDoumYeri_1_1_2_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		lblDoumYeri_1_1_2_1.setBounds(10, 225, 68, 22);
-		panel_5_4_1_1_1.add(lblDoumYeri_1_1_2_1);
+	
+		
+		//Randevu Sil Start
+				JButton btnRSSil = new JButton("Randevu Sil");
+				btnRSSil.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						String Delrandevu=(String) cboxRSSilRandevular.getSelectedItem();
+						if(Delrandevu!=null) {
+							int reply = JOptionPane.showConfirmDialog(panel, ""+Delrandevu+" randevuyu silmek istiyorsunuz Emin misiniz?", "Emin misiniz?", JOptionPane.YES_NO_OPTION);
+							if (reply == JOptionPane.YES_OPTION) {
+								try {
+									String Sql1="DELETE FROM public.\""+Delrandevu+"\" WHERE \"Tc\"= '"+Delrandevu+"';";
+									int rs= s.executeUpdate(Sql1);
+									if (rs==1) {
+										JOptionPane.showMessageDialog(panel, "Randevu başarılı bir şekilde silindi");
+									}
+								} catch (Exception e2) {
+									// TODO: handle exception
+								}
+							} 
+						}
+					}
+				});
+				btnRSSil.setBounds(112, 314, 123, 27);
+				panel_5_4_1_1.add(btnRSSil);
+				btnRSSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		//Randevu Sil End
+		
+		txtRsAlTarih = new JTextField();
+		txtRsAlTarih.setColumns(10);
+		txtRsAlTarih.setBounds(112, 176, 179, 20);
+		panel_5_4_1.add(txtRsAlTarih);
+		
+		JButton btnAra = new JButton("Ara");
+		btnAra.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String str=txtRsSilTc.getText();
+				listCombo(cboxRSSilRandevular,str);
+			}
+		});
+		btnAra.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnAra.setBounds(222, 25, 69, 20);
+		panel_5_4_1_1.add(btnAra);
 		
 		JPanel panel_8_2 = new JPanel();
 		panel_8_2.setLayout(null);
 		panel_8_2.setBounds(0, 0, 188, 376);
 		RandevuPanel.add(panel_8_2);
+		
+		JButton btnRSAl = new JButton("Randevu Al");
+		btnRSAl.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Appointment ap = new Appointment();
+				ap.DoktorAdi=(String)cboxRSALDoktorAdi.getSelectedItem();
+				ap.PolId=cboxRSALPolikinlik.getSelectedIndex()+1;
+				ap.Tarih=txtRsAlTarih.getText();
+				ap.Tc=txtRSALHastaTc.getText();
+				try {
+					String sql1 = "INSERT INTO public.\"Appointment\"(\"PolId\", \"DoktorAdi\", \"Tc\", \"Tarih\") VALUES (?, ?, ?, ?);";
+					PreparedStatement prep =c.prepareStatement(sql1);
+					prep.setInt(1,ap.PolId);
+					prep.setString(2, ap.DoktorAdi);
+					prep.setString(3, ap.Tc);
+					prep.setString(4, ap.Tarih);
+					int den=prep.executeUpdate();
+					if (den==1) {
+						JOptionPane.showMessageDialog(HomePanel,"Randevu Başarılı Bir Şekilde Alındı");
+					}
+				} catch (SQLException e3) {
+
+					e3.printStackTrace();
+				}
+			}
+		});
+		btnRSAl.setBounds(112, 314, 123, 27);
+		panel_5_4_1.add(btnRSAl);
+		btnRSAl.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		
+		JButton btnRsAlAra = new JButton("Ara");
+		btnRsAlAra.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int ab=cboxRSALPolikinlik.getSelectedIndex()+1;
+				listDoktor(cboxRSALDoktorAdi,ab);
+			}
+		});
+		btnRsAlAra.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		btnRsAlAra.setBounds(236, 23, 69, 20);
+		panel_5_4_1.add(btnRsAlAra);
+
+		
+		
 		//Randevu Panel End
 				
 		
