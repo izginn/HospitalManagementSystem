@@ -24,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JMenu;
 import javax.swing.JLabel;
 import java.awt.Font;
+import java.awt.Panel;
 import java.awt.TextField;
 import java.time.*;
 
@@ -66,6 +67,8 @@ import javax.swing.JPasswordField;
 import javax.swing.SwingConstants;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 
 public class MainFrame extends JFrame {
 
@@ -142,6 +145,7 @@ public class MainFrame extends JFrame {
 			}
 		});
 	}
+
 	public void listCombo(JComboBox comboBox,String str) {
 		String sql1 = "SELECT \"RandevuKodu\",\"DoktorAdi\", \"Tarih\" FROM public.\"Appointment\" where \"Tc\"='"+str+"';";
 		ResultSet rs;		
@@ -162,6 +166,329 @@ public class MainFrame extends JFrame {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	public void listJtreePersonel(JPanel panel) {
+		try {
+            // SQL sorgusu
+	    	String sql="SELECT \"Ad\", \"Tc\",\"GorevId\" FROM public.\"Personel\";";
+
+            // Sorguyu çalıştırma
+            ResultSet resultSet = s.executeQuery(sql);
+
+            // JTree kök düğümü
+            DefaultMutableTreeNode rootPersonel = new DefaultMutableTreeNode("Personeller");
+
+            // Verileri JTree'e ekleme
+            while (resultSet.next()) {
+            	String Tc= resultSet.getString("Tc");
+                int GorevId = resultSet.getInt("GorevId");
+                String ad = resultSet.getString("Ad");
+             // Veriyi ilgili klasöre yerleştirme
+                DefaultMutableTreeNode klasorNode;
+                switch (GorevId) {
+                    case 1:
+                        klasorNode = findOrCreateFolder(rootPersonel, "Güvenlik Görevlisi");
+                        break;
+                    case 2:
+                        klasorNode = findOrCreateFolder(rootPersonel, "Hasta Bakıcı");
+                        break;
+                    case 3:
+                        klasorNode = findOrCreateFolder(rootPersonel,"Temizlik Görevlisi");
+                        break; 
+                    case 4:
+                        klasorNode = findOrCreateFolder(rootPersonel,"İdari İşler");
+                        break; 
+                    default:
+                        continue;
+                }
+
+                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
+                klasorNode.add(veriNode);
+            }
+
+            // JTree'i oluşturma ve gösterme
+            JButton btnPersonelAra = new JButton("Ara");
+    		btnPersonelAra.setBounds(102, 0, 86, 21);
+    		panel.add(btnPersonelAra);
+    		
+    		
+    		
+    		JTree tree_1_2_2 = new JTree(rootPersonel);
+    		tree_1_2_2.setBounds(0, 22, 188, 355);
+    		panel.add(tree_1_2_2);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
+	public void listJtreeDoctor(JPanel panel) {
+		try {
+            // SQL sorgusu
+	    	String sql="SELECT \"Ad\", \"Tc\",\"PolId\" FROM public.\"Doctor\";";
+
+            // Sorguyu çalıştırma
+            ResultSet resultSet = s.executeQuery(sql);
+
+            // JTree kök düğümü
+            DefaultMutableTreeNode rootDoktor = new DefaultMutableTreeNode("Doktorlar");
+
+            // Verileri JTree'e ekleme
+            while (resultSet.next()) {
+            	String Tc= resultSet.getString("Tc");
+                int PolId = resultSet.getInt("PolId");
+                String ad = resultSet.getString("Ad");
+             // Veriyi ilgili klasöre yerleştirme
+                DefaultMutableTreeNode klasorNode;
+                switch (PolId) {
+                    case 1:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Fiziksel Tıp ve Rahabilitasyon");
+                        break;
+                    case 2:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Kalp ve Damar Cerrahisi");
+                        break;
+                    case 3:
+                        klasorNode = findOrCreateFolder(rootDoktor,"Kardiyoloji");
+                        break;
+                    case 4:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Kulak Burun Boğaz");
+                        break;
+                    case 5:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Radyoloji");
+                        break;
+                    case 6:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Üroloji");
+                        break;
+                    case 7:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Beyin ve Sinir Cerrahisi");
+                        break;
+                    case 8:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Gastroenteroloji");
+                        break;
+                    case 9:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Genel Cerrahi");
+                        break;
+                    case 10:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Göz Hastalıkları");
+                        break;
+                    case 11:
+                        klasorNode = findOrCreateFolder(rootDoktor, "Psikiyatri");
+                        break;
+                    default:
+                        continue;
+                }
+                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
+                klasorNode.add(veriNode);
+            }
+    		
+    		JTree tree_1_2 = new JTree(rootDoktor);
+    		tree_1_2.setBounds(0, 22, 188, 355);
+    		panel.add(tree_1_2);
+            // JTree'i oluşturma ve gösterme
+    		JButton btnDKAra = new JButton("Ara");
+    		btnDKAra.addActionListener(new ActionListener() {
+    			public void actionPerformed(ActionEvent e) {
+    				TreePath selectionPath = tree_1_2.getSelectionPath();
+    	    		if (selectionPath != null) {
+    	    		    // Seçilen düğüm varsa, düğümü alabilirsiniz
+    	    		    DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+    	    		    
+    	    		    // Düğümün değerini veya adını almak için kullanabilirsiniz
+    	    		    String selectedNodeName = selectedNode.toString();
+    	    		    
+    	    		    // Alınan bilgileri kullanabilirsiniz
+    	    		    try {
+        	    		    Doctor d = new Doctor();
+        	    		    String sql2="SELECT \"Id\", \"Ad\", \"Tc\", \"DogYer\", \"Cinsiyet\", \"Adres\", \"Telefon\", \"Mail\", \"OgrenimSeviyesi\", \"Alan\", \"ToplamIzin\", \"CalSaati\", \"PolId\", \"DogTar\" FROM public.\"Doctor\" where \"Ad\"='"+selectedNodeName+"';";
+        	    		    ResultSet rs=s.executeQuery(sql2);
+        	    		    while (rs.next()) {
+								d.Ad=rs.getString("Ad");
+								d.Adres=rs.getString("Adres");
+								d.Alan=rs.getString("Alan");
+								d.CalSaati=rs.getString("CalSaati");
+								d.Cinsiyet=rs.getString("Cinsiyet");
+								d.DogTar=rs.getInt("DogTar");
+								d.DogYer=rs.getString("DogYer");
+								d.Mail=rs.getString("Mail");
+								d.OgrenimSeviyesi=rs.getString("OgrenimSeviyesi");
+								d.PolId=rs.getInt("PolId");
+								d.Tc=rs.getString("Tc");
+								d.Telefon=rs.getString("Telefon");
+								d.ToplamIzin=rs.getInt("ToplamIzin");
+						    	
+						    	
+							}
+						} catch (Exception e2) {
+							// TODO: handle exception
+						}
+    	    		} else {
+    	    		    // Hiçbir düğüm seçilmemişse veya seçim yoksa
+    	    		    System.out.println("Hiçbir düğüm seçilmedi.");
+    	    		}
+    			}
+    		});
+    		btnDKAra.setBounds(102, 0, 86, 20);
+    		panel.add(btnDKAra);
+
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
+	public void listjtreePatient(JPanel panel) {
+		//Jtree Patient
+				try {
+		            // SQL sorgusu
+			    	String sql="SELECT \"Ad\",\"Tc\",\"PolId\" FROM PUBLIC.\"Patient\"";
+
+		            // Sorguyu çalıştırma
+		            ResultSet resultSet = s.executeQuery(sql);
+
+		            // JTree kök düğümü
+		            DefaultMutableTreeNode root = new DefaultMutableTreeNode("Hastalar");
+
+		            // Verileri JTree'e ekleme
+		            while (resultSet.next()) {
+		            	String Tc= resultSet.getString("Tc");
+		                int PolId = resultSet.getInt("PolId");
+		                String ad = resultSet.getString("Ad");
+		             // Veriyi ilgili klasöre yerleştirme
+		                DefaultMutableTreeNode klasorNode;
+		                switch (PolId) {
+		                    case 1:
+		                        klasorNode = findOrCreateFolder(root, "Fiziksel Tıp ve Rahabilitasyon");
+		                        break;
+		                    case 2:
+		                        klasorNode = findOrCreateFolder(root, "Kalp ve Damar Cerrahisi");
+		                        break;
+		                    case 3:
+		                        klasorNode = findOrCreateFolder(root,"Kardiyoloji");
+		                        break;
+		                    case 4:
+		                        klasorNode = findOrCreateFolder(root, "Kulak Burun Boğaz");
+		                        break;
+		                    case 5:
+		                        klasorNode = findOrCreateFolder(root, "Radyoloji");
+		                        break;
+		                    case 6:
+		                        klasorNode = findOrCreateFolder(root, "Üroloji");
+		                        break;
+		                    case 7:
+		                        klasorNode = findOrCreateFolder(root, "Beyin ve Sinir Cerrahisi");
+		                        break;
+		                    case 8:
+		                        klasorNode = findOrCreateFolder(root, "Gastroenteroloji");
+		                        break;
+		                    case 9:
+		                        klasorNode = findOrCreateFolder(root, "Genel Cerrahi");
+		                        break;
+		                    case 10:
+		                        klasorNode = findOrCreateFolder(root, "Göz Hastalıkları");
+		                        break;
+		                    case 11:
+		                        klasorNode = findOrCreateFolder(root, "Psikiyatri");
+		                        break;
+		                    default:
+		                        continue;
+		                }
+
+		                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
+		                klasorNode.add(veriNode);
+		            }
+
+		            // JTree'i oluşturma ve gösterme
+		       		JTree tree_1_2 = new JTree(root);
+		    		tree_1_2.setBounds(0, 22, 188, 355);						
+		    		panel.add(tree_1_2);
+
+		    		JButton btnHKAra = new JButton("Ara");
+		    		btnHKAra.addActionListener(new ActionListener() {
+		    			public void actionPerformed(ActionEvent e) {
+		    				TreePath selectionPath = tree_1_2.getSelectionPath();
+		    	    		if (selectionPath != null) {
+		    	    		    // Seçilen düğüm varsa, düğümü alabilirsiniz
+		    	    		    DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+		    	    		    
+		    	    		    // Düğümün değerini veya adını almak için kullanabilirsiniz
+		    	    		    String selectedNodeName = selectedNode.toString();
+		    	    		    
+		    	    		    // Alınan bilgileri kullanabilirsiniz
+		    	    		    try {
+		        	    		    String sql2="SELECT \"Id\", \"Ad\", \"Tc\", \"DogYer\", \"Cinsiyet\", \"Adres\", \"Telefon\", \"SigortaTuru\", \"SicilNo\", \"RefAdi\", \"RefYakinlik\", \"Boy\", \"Kilo\", \"KanGrubu\", \"Ekg\", \"TedaviSekli\", \"KullanilanIlac\", \"SonGuncelleme\", \"GecmisHastalik\", \"PolId\", \"DogTar\" FROM public.\"Patient\" where \"Ad\"='"+selectedNodeName+"';";
+		        	    		    ResultSet rs=s.executeQuery(sql2);
+		        		    		HKUpdatePanel hkp = new HKUpdatePanel();
+		        		    		hkp.GelenVeri(selectedNodeName);
+		        			    	hkp.setVisible(true);
+		        	    		    while (rs.next()) {
+								    	
+									}
+								} catch (Exception e2) {
+									// TODO: handle exception
+								}
+		    	    		} else {
+		    	    		    // Hiçbir düğüm seçilmemişse veya seçim yoksa
+		    	    		    System.out.println("Hiçbir düğüm seçilmedi.");
+		    	    		}
+		    			}
+		    		});
+		    		btnHKAra.setBounds(102, 0, 86, 20);
+		    		panel.add(btnHKAra);
+				} catch (Exception e) {
+					// TODO: handle exception
+				}
+		       	
+				//Jtree Patient end
+	}
+	public void listJtreeEmergencyPatient(JPanel panel) {
+		//Jtree Patient
+				try {
+		            // SQL sorgusu
+			    	String sql="SELECT \"Adi\", \"Tc\", \"RenkId\" FROM public.\"EmergencyPatient\";";
+
+		            // Sorguyu çalıştırma
+		            ResultSet resultSet = s.executeQuery(sql);
+
+		            // JTree kök düğümü
+		            DefaultMutableTreeNode Acilroot = new DefaultMutableTreeNode("Acil Hastalar");
+
+		            // Verileri JTree'e ekleme
+		            while (resultSet.next()) {
+		            	String Tc= resultSet.getString("Tc");
+		                int RenkId = resultSet.getInt("RenkId");
+		                String ad = resultSet.getString("Adi");
+		             // Veriyi ilgili klasöre yerleştirme
+		                DefaultMutableTreeNode klasorNode;
+		                switch (RenkId) {
+		                    case 1:
+		                        klasorNode = findOrCreateFolder(Acilroot, "Kırmızı");
+		                        break;
+		                    case 2:
+		                        klasorNode = findOrCreateFolder(Acilroot, "Sarı");
+		                        break;
+		                    case 3:
+		                        klasorNode = findOrCreateFolder(Acilroot,"Yeşil");
+		                        break;
+		                   
+		                    default:
+		                        continue;
+		                }
+
+		                DefaultMutableTreeNode Verinodes = new DefaultMutableTreeNode(ad);
+		                klasorNode.add(Verinodes); 
+		            }
+		            JTree tree_1_2_2_1 = new JTree(Acilroot);
+		    		tree_1_2_2_1.setBounds(0, 22, 188, 355);
+		    		panel.add(tree_1_2_2_1);
+		    		
+		    		JButton btnHasAra_1_1_2_1 = new JButton("Ara");
+		    		btnHasAra_1_1_2_1.addActionListener(new ActionListener() {
+		    			public void actionPerformed(ActionEvent e) {
+		    				
+		    			}
+		    		});
+		    		btnHasAra_1_1_2_1.setBounds(102, 0, 86, 21);
+		    		panel.add(btnHasAra_1_1_2_1);
+		            }catch (Exception e) {
+						// TODO: handle exception
+					
+		            }
 	}
 	public void listDoktor(JComboBox cbox,Integer ab) {
 		String sql1 = "SELECT \"Ad\" FROM public.\"Doctor\" Where \"PolId\" = "+ab+";";
@@ -187,6 +514,7 @@ public class MainFrame extends JFrame {
 	    // Düğüm adını arama sorgusuyla karşılaştır
 	    if (node.toString().equalsIgnoreCase(searchQuery)) {
 	        System.out.println("Eşleşen düğüm bulundu: " + node.toString());
+	        
 	    }
 
 	    // Alt düğümleri kontrol etmek için döngü kullan
@@ -307,87 +635,11 @@ public class MainFrame extends JFrame {
 		txtHKArama.setColumns(10);
 		txtHKArama.setBounds(0, 0, 101, 21);
 		panel_8.add(txtHKArama);
-		//Jtree Patient
-		try {
-            // SQL sorgusu
-	    	String sql="SELECT \"Ad\",\"Tc\",\"PolId\" FROM PUBLIC.\"Patient\"";
-
-            // Sorguyu çalıştırma
-            ResultSet resultSet = s.executeQuery(sql);
-
-            // JTree kök düğümü
-            DefaultMutableTreeNode root = new DefaultMutableTreeNode("Hastalar");
-
-            // Verileri JTree'e ekleme
-            while (resultSet.next()) {
-            	String Tc= resultSet.getString("Tc");
-                int PolId = resultSet.getInt("PolId");
-                String ad = resultSet.getString("Ad");
-             // Veriyi ilgili klasöre yerleştirme
-                DefaultMutableTreeNode klasorNode;
-                switch (PolId) {
-                    case 1:
-                        klasorNode = findOrCreateFolder(root, "Fiziksel Tıp ve Rahabilitasyon");
-                        break;
-                    case 2:
-                        klasorNode = findOrCreateFolder(root, "Kalp ve Damar Cerrahisi");
-                        break;
-                    case 3:
-                        klasorNode = findOrCreateFolder(root,"Kardiyoloji");
-                        break;
-                    case 4:
-                        klasorNode = findOrCreateFolder(root, "Kulak Burun Boğaz");
-                        break;
-                    case 5:
-                        klasorNode = findOrCreateFolder(root, "Radyoloji");
-                        break;
-                    case 6:
-                        klasorNode = findOrCreateFolder(root, "Üroloji");
-                        break;
-                    case 7:
-                        klasorNode = findOrCreateFolder(root, "Beyin ve Sinir Cerrahisi");
-                        break;
-                    case 8:
-                        klasorNode = findOrCreateFolder(root, "Gastroenteroloji");
-                        break;
-                    case 9:
-                        klasorNode = findOrCreateFolder(root, "Genel Cerrahi");
-                        break;
-                    case 10:
-                        klasorNode = findOrCreateFolder(root, "Göz Hastalıkları");
-                        break;
-                    case 11:
-                        klasorNode = findOrCreateFolder(root, "Psikiyatri");
-                        break;
-                    default:
-                        continue;
-                }
-
-                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
-                klasorNode.add(veriNode);
-            }
-
-            // JTree'i oluşturma ve gösterme
-       		JTree tree_1_2 = new JTree(root);
-    		tree_1_2.setBounds(0, 22, 188, 355);						
-    		panel_8.add(tree_1_2);
-    		
-    		JButton btnHKAra = new JButton("Ara");
-    		btnHKAra.addActionListener(new ActionListener() {
-    			public void actionPerformed(ActionEvent e) {
-    				searchNode(tree_1_2,txtHKArama.getText());
-    			}
-    		});
-    		btnHKAra.setBounds(102, 0, 86, 20);
-    		panel_8.add(btnHKAra);
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-       	
-		//Jtree Patient end
+		listjtreePatient(panel_8);
+		
 
 		JPanel panel = new JPanel();
-		panel.setBounds(198, 0, 835, 376);
+		panel.setBounds(198, 0, 802, 376);
 		HastaKayitPanel.add(panel);
 		panel.setLayout(null);
 		
@@ -618,16 +870,12 @@ public class MainFrame extends JFrame {
 		btnHKSil.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Delete(HastaKayitPanel,"Patient");
+				listjtreePatient(panel_8);
 			}
 		});
 		btnHKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnHKSil.setBounds(524, 338, 123, 27);
+		btnHKSil.setBounds(441, 338, 123, 27);
 		panel.add(btnHKSil);
-		//Hasta Delete End
-		JButton btnGuncelleHasta = new JButton("Güncelle");
-		btnGuncelleHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnGuncelleHasta.setBounds(356, 338, 123, 27);
-		panel.add(btnGuncelleHasta);
 		//Hasta Kayıt Action Start
 		JButton btnKaydetHasta = new JButton("Kaydet");
 		btnKaydetHasta.addActionListener(new ActionListener() {
@@ -681,6 +929,7 @@ public class MainFrame extends JFrame {
 					int den=prep.executeUpdate();
 					if (den==1) {
 						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+						listjtreePatient(panel_8);
 					}
 				} catch (SQLException e3) {
 					// TODO Auto-generated catch block
@@ -691,7 +940,7 @@ public class MainFrame extends JFrame {
 
 		//Hasta Kayıt Action End
 		btnKaydetHasta.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnKaydetHasta.setBounds(181, 338, 123, 27);
+		btnKaydetHasta.setBounds(236, 338, 123, 27);
 		panel.add(btnKaydetHasta);
 		//Hasta Kayit Panel End
 		//Acil Servis Panel Start
@@ -819,6 +1068,14 @@ public class MainFrame extends JFrame {
 		lblDoumYeri_1_1_3_1.setBounds(10, 11, 124, 22);
 		panel_5_4_1_2_2.add(lblDoumYeri_1_1_3_1);
 		lblDoumYeri_1_1_3_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		
+		JPanel panel_8_4_1 = new JPanel();
+		panel_8_4_1.setLayout(null);
+		panel_8_4_1.setBounds(0, 0, 188, 376);
+		AcilServisPanel.add(panel_8_4_1);
+		
+		listJtreeEmergencyPatient(panel_8_4_1);
+		
 		//Acil Servis Kaydet Start
 		JButton btnASKaydet = new JButton("Kaydet");
 		btnASKaydet.addActionListener(new ActionListener() {
@@ -862,6 +1119,7 @@ public class MainFrame extends JFrame {
 						txtASsuur.setText("");
 						txtAStc.setText("");
 						cboxASRenkId.setSelectedIndex(0);
+						listJtreeEmergencyPatient(panel_8_4_1);
 					}
 				} catch (SQLException e3) {
 					// TODO Auto-generated catch block
@@ -871,86 +1129,26 @@ public class MainFrame extends JFrame {
 		});
 		
 		btnASKaydet.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnASKaydet.setBounds(193, 307, 123, 27);
+		btnASKaydet.setBounds(260, 307, 123, 27);
 		panel_2_1_1.add(btnASKaydet);
-		//Acil Servis Kaydet End
-		JButton btnASGuncelle = new JButton("Güncelle");
-		btnASGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnASGuncelle.setBounds(352, 307, 123, 27);
-		panel_2_1_1.add(btnASGuncelle);
 		//Acil Servis Hasta Silme Start
 		JButton btnSil = new JButton("Sil");
 		btnSil.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Delete(AcilServisPanel,"EmergencyPatient");
+				listJtreeEmergencyPatient(panel_8_4_1);
 			}
 		});
 		btnSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnSil.setBounds(513, 307, 123, 27);
+		btnSil.setBounds(456, 307, 123, 27);
 		panel_2_1_1.add(btnSil);
 		//Acil Servis Hasta Silme End
-		JPanel panel_8_4_1 = new JPanel();
-		panel_8_4_1.setLayout(null);
-		panel_8_4_1.setBounds(0, 0, 188, 376);
-		AcilServisPanel.add(panel_8_4_1);
+
 		
 		textField_3 = new JTextField();
 		textField_3.setColumns(10);
 		textField_3.setBounds(0, 0, 101, 21);
 		panel_8_4_1.add(textField_3);
-		//Jtree Patient
-		try {
-            // SQL sorgusu
-	    	String sql="SELECT \"Adi\", \"Tc\", \"RenkId\" FROM public.\"EmergencyPatient\";";
-
-            // Sorguyu çalıştırma
-            ResultSet resultSet = s.executeQuery(sql);
-
-            // JTree kök düğümü
-            DefaultMutableTreeNode Acilroot = new DefaultMutableTreeNode("Acil Hastalar");
-
-            // Verileri JTree'e ekleme
-            while (resultSet.next()) {
-            	String Tc= resultSet.getString("Tc");
-                int RenkId = resultSet.getInt("RenkId");
-                String ad = resultSet.getString("Adi");
-             // Veriyi ilgili klasöre yerleştirme
-                DefaultMutableTreeNode klasorNode;
-                switch (RenkId) {
-                    case 1:
-                        klasorNode = findOrCreateFolder(Acilroot, "Kırmızı");
-                        break;
-                    case 2:
-                        klasorNode = findOrCreateFolder(Acilroot, "Sarı");
-                        break;
-                    case 3:
-                        klasorNode = findOrCreateFolder(Acilroot,"Yeşil");
-                        break;
-                   
-                    default:
-                        continue;
-                }
-
-                DefaultMutableTreeNode Verinodes = new DefaultMutableTreeNode(ad);
-                klasorNode.add(Verinodes); 
-            }
-            JTree tree_1_2_2_1 = new JTree(Acilroot);
-    		tree_1_2_2_1.setBounds(0, 22, 188, 355);
-    		panel_8_4_1.add(tree_1_2_2_1);
-    		
-    		JButton btnHasAra_1_1_2_1 = new JButton("Ara");
-    		btnHasAra_1_1_2_1.addActionListener(new ActionListener() {
-    			public void actionPerformed(ActionEvent e) {
-    			}
-    		});
-    		btnHasAra_1_1_2_1.setBounds(102, 0, 86, 21);
-    		panel_8_4_1.add(btnHasAra_1_1_2_1);
-            }catch (Exception e) {
-				// TODO: handle exception
-			
-            }
-		
-		
 		//Acil Servis Panel End
 		
 		//Doktor Kayit Panel Start
@@ -1018,6 +1216,19 @@ public class MainFrame extends JFrame {
 		txtDkDogYer.setColumns(10);
 		txtDkDogYer.setBounds(144, 115, 106, 20);
 		panel_5_4.add(txtDkDogYer);
+		
+		
+		JPanel panel_8_1 = new JPanel();
+		panel_8_1.setLayout(null);
+		panel_8_1.setBounds(0, 0, 188, 376);
+		DoktorKayitPanel.add(panel_8_1);
+		
+		textField_30 = new JTextField();
+		textField_30.setColumns(10);
+		textField_30.setBounds(0, 0, 101, 21);
+		panel_8_1.add(textField_30);
+		
+		listJtreeDoctor(panel_8_1);
 		
 		JPanel panel_5_5 = new JPanel();
 		panel_5_5.setLayout(null);
@@ -1116,6 +1327,10 @@ public class MainFrame extends JFrame {
 		txtdkCalsaati.setBounds(588, 42, 106, 20);
 		panel_5_3_1.add(txtdkCalsaati);
 		
+        JButton btnDoktorAra = new JButton("Ara");
+		btnDoktorAra.setBounds(102, 0, 86, 21);
+		panel.add(btnDoktorAra);
+		
 		JButton btnKaydetDoktor = new JButton("Kaydet");
 		btnKaydetDoktor.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -1155,6 +1370,8 @@ public class MainFrame extends JFrame {
 					int den=prep.executeUpdate();
 					if (den==1) {
 						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+						
+						listJtreeDoctor(panel_8_1);
 					}
 				} catch (SQLException e3) {
 					// TODO Auto-generated catch block
@@ -1163,22 +1380,18 @@ public class MainFrame extends JFrame {
 			}
 		});
 		btnKaydetDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnKaydetDoktor.setBounds(147, 321, 123, 27);
+		btnKaydetDoktor.setBounds(212, 321, 123, 27);
 		panel_1.add(btnKaydetDoktor);
-		
-		JButton btnGncelleDoktor = new JButton("Güncelle");
-		btnGncelleDoktor.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnGncelleDoktor.setBounds(301, 321, 123, 27);
-		panel_1.add(btnGncelleDoktor);
 		//Doktor Sil Start
 		JButton btnDKSil = new JButton("Sil");
 		btnDKSil.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Delete(DoktorKayitPanel,"Doctor");
+				listJtreeDoctor(panel_8_1);
 			}
 		});
 		btnDKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnDKSil.setBounds(457, 321, 123, 27);
+		btnDKSil.setBounds(401, 321, 123, 27);
 		panel_1.add(btnDKSil);
 		//Doktor Sil End
 		JButton btnDKIzinKullan = new JButton("İzin Kullan");
@@ -1189,91 +1402,8 @@ public class MainFrame extends JFrame {
 			}
 		});
 		btnDKIzinKullan.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnDKIzinKullan.setBounds(618, 321, 123, 27);
+		btnDKIzinKullan.setBounds(562, 321, 123, 27);
 		panel_1.add(btnDKIzinKullan);
-		
-		JPanel panel_8_1 = new JPanel();
-		panel_8_1.setLayout(null);
-		panel_8_1.setBounds(0, 0, 188, 376);
-		DoktorKayitPanel.add(panel_8_1);
-		
-		textField_30 = new JTextField();
-		textField_30.setColumns(10);
-		textField_30.setBounds(0, 0, 101, 21);
-		panel_8_1.add(textField_30);
-		try {
-            // SQL sorgusu
-	    	String sql="SELECT \"Ad\", \"Tc\",\"PolId\" FROM public.\"Doctor\";";
-
-            // Sorguyu çalıştırma
-            ResultSet resultSet = s.executeQuery(sql);
-
-            // JTree kök düğümü
-            DefaultMutableTreeNode rootDoktor = new DefaultMutableTreeNode("Doktorlar");
-
-            // Verileri JTree'e ekleme
-            while (resultSet.next()) {
-            	String Tc= resultSet.getString("Tc");
-                int PolId = resultSet.getInt("PolId");
-                String ad = resultSet.getString("Ad");
-             // Veriyi ilgili klasöre yerleştirme
-                DefaultMutableTreeNode klasorNode;
-                switch (PolId) {
-                    case 1:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Fiziksel Tıp ve Rahabilitasyon");
-                        break;
-                    case 2:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Kalp ve Damar Cerrahisi");
-                        break;
-                    case 3:
-                        klasorNode = findOrCreateFolder(rootDoktor,"Kardiyoloji");
-                        break;
-                    case 4:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Kulak Burun Boğaz");
-                        break;
-                    case 5:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Radyoloji");
-                        break;
-                    case 6:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Üroloji");
-                        break;
-                    case 7:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Beyin ve Sinir Cerrahisi");
-                        break;
-                    case 8:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Gastroenteroloji");
-                        break;
-                    case 9:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Genel Cerrahi");
-                        break;
-                    case 10:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Göz Hastalıkları");
-                        break;
-                    case 11:
-                        klasorNode = findOrCreateFolder(rootDoktor, "Psikiyatri");
-                        break;
-                    default:
-                        continue;
-                }
-
-                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
-                klasorNode.add(veriNode);
-            }
-
-            // JTree'i oluşturma ve gösterme
-            JButton btnDoktorAra = new JButton("Ara");
-    		btnDoktorAra.setBounds(102, 0, 86, 21);
-    		panel_8_1.add(btnDoktorAra);
-    		
-    		
-    		
-    		JTree tree_1_2_1 = new JTree(rootDoktor);
-    		tree_1_2_1.setBounds(0, 22, 188, 355);
-    		panel_8_1.add(tree_1_2_1);
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-		
 		
 		//Doktor Kayıt Panel End
 		//Personel Kayıt Panel Start
@@ -1298,59 +1428,9 @@ public class MainFrame extends JFrame {
 		textField_19.setBounds(0, 0, 101, 21);
 		panel_8_4.add(textField_19);
 		
+		listJtreePersonel(panel_8_4);
 		
 		
-		try {
-            // SQL sorgusu
-	    	String sql="SELECT \"Ad\", \"Tc\",\"GorevId\" FROM public.\"Personel\";";
-
-            // Sorguyu çalıştırma
-            ResultSet resultSet = s.executeQuery(sql);
-
-            // JTree kök düğümü
-            DefaultMutableTreeNode rootPersonel = new DefaultMutableTreeNode("Personeller");
-
-            // Verileri JTree'e ekleme
-            while (resultSet.next()) {
-            	String Tc= resultSet.getString("Tc");
-                int GorevId = resultSet.getInt("GorevId");
-                String ad = resultSet.getString("Ad");
-             // Veriyi ilgili klasöre yerleştirme
-                DefaultMutableTreeNode klasorNode;
-                switch (GorevId) {
-                    case 1:
-                        klasorNode = findOrCreateFolder(rootPersonel, "Güvenlik Görevlisi");
-                        break;
-                    case 2:
-                        klasorNode = findOrCreateFolder(rootPersonel, "Hasta Bakıcı");
-                        break;
-                    case 3:
-                        klasorNode = findOrCreateFolder(rootPersonel,"Temizlik Görevlisi");
-                        break; 
-                    case 4:
-                        klasorNode = findOrCreateFolder(rootPersonel,"İdari İşler");
-                        break; 
-                    default:
-                        continue;
-                }
-
-                DefaultMutableTreeNode veriNode = new DefaultMutableTreeNode(ad);
-                klasorNode.add(veriNode);
-            }
-
-            // JTree'i oluşturma ve gösterme
-            JButton btnPersonelAra = new JButton("Ara");
-    		btnPersonelAra.setBounds(102, 0, 86, 21);
-    		panel_8_4.add(btnPersonelAra);
-    		
-    		
-    		
-    		JTree tree_1_2_2 = new JTree(rootPersonel);
-    		tree_1_2_2.setBounds(0, 22, 188, 355);
-    		panel_8_4.add(tree_1_2_2);
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
 		
 		JPanel panel_3 = new JPanel();
 		panel_3.setBounds(198, 0, 802, 376);
@@ -1438,11 +1518,6 @@ public class MainFrame extends JFrame {
 		txtPkTel.setBounds(105, 104, 179, 20);
 		panel_5_6_1.add(txtPkTel);
 		
-		JButton btnPKGuncelle = new JButton("Güncelle");
-		btnPKGuncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnPKGuncelle.setBounds(311, 317, 123, 27);
-		panel_3.add(btnPKGuncelle);
-		
 		JPanel panel_5_3_1_1 = new JPanel();
 		panel_5_3_1_1.setLayout(null);
 		panel_5_3_1_1.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u0130\u015F Bilgileri", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
@@ -1523,6 +1598,7 @@ public class MainFrame extends JFrame {
 					int den=prep.executeUpdate();
 					if (den==1) {
 						JOptionPane.showMessageDialog(HomePanel,"Kayıt Başarılı");
+						listJtreePersonel(panel_8_4);
 					}
 				} catch (SQLException e3) {
 
@@ -1531,24 +1607,25 @@ public class MainFrame extends JFrame {
 			}
 		});
 		btnPKKaydet.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnPKKaydet.setBounds(145, 317, 123, 27);
+		btnPKKaydet.setBounds(245, 317, 123, 27);
 		panel_3.add(btnPKKaydet);
 		//Personel Kayıt Action end
 		
 		
 		JButton btnPKIzinKullan = new JButton("İzin Kullan");
 		btnPKIzinKullan.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnPKIzinKullan.setBounds(638, 317, 123, 27);
+		btnPKIzinKullan.setBounds(565, 317, 123, 27);
 		panel_3.add(btnPKIzinKullan);
 		
 		JButton btnPKSil = new JButton("Sil");
 		btnPKSil.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Delete(PersonelKayitPanel,"Personel");
+				listJtreePersonel(panel_8_4);
 			}
 		});
 		btnPKSil.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		btnPKSil.setBounds(478, 317, 123, 27);
+		btnPKSil.setBounds(405, 317, 123, 27);
 		panel_3.add(btnPKSil);
 		
 		//Personel Kayıt Panel End
@@ -1594,7 +1671,6 @@ public class MainFrame extends JFrame {
 		txtRSALHastaTc.setBounds(112, 125, 179, 20);
 		panel_5_4_1.add(txtRSALHastaTc);
 		
-		
 		JComboBox cboxRSALPolikinlik = new JComboBox();
 		cboxRSALPolikinlik.setModel(new DefaultComboBoxModel(new String[] {"Fiziksel Tıp ve Rehabilitasyon", "Kalp ve Damar Cerrahisi", "Kardiyoloji", "Kulak Burun Boğaz", "Radyoloji", "Üroloji", "Beyin ve Sinir Cerrahisi", "Gastroenteroloji", "Genel Cerrahi", "Göz Hastalıkları", "Psikiyatri"}));
 		cboxRSALPolikinlik.setBounds(114, 23, 112, 22);
@@ -1617,8 +1693,6 @@ public class MainFrame extends JFrame {
 		txtRsSilTc.setColumns(10);
 		txtRsSilTc.setBounds(112, 25, 103, 20);
 		panel_5_4_1_1.add(txtRsSilTc);
-		
-		
 		
 		JComboBox cboxRSSilRandevular = new JComboBox();
 		cboxRSSilRandevular.setBounds(112, 107, 179, 22);
@@ -1646,11 +1720,13 @@ public class MainFrame extends JFrame {
 		panel_5_4_1_1_1.add(txtRSGunTc);
 		
 		JButton btnRandevuGncelle = new JButton("Randevu Güncelle");
+		btnRandevuGncelle.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
 		btnRandevuGncelle.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnRandevuGncelle.setBounds(97, 314, 169, 27);
 		panel_5_4_1_1_1.add(btnRandevuGncelle);
-		
-		
 		
 		JComboBox cboxRSSGuncelleRandevular_1 = new JComboBox();
 		cboxRSSGuncelleRandevular_1.setBounds(112, 67, 179, 22);
@@ -1660,7 +1736,6 @@ public class MainFrame extends JFrame {
 		lblNewLabel_1_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		lblNewLabel_1_1_1_1.setBounds(10, 69, 96, 14);
 		panel_5_4_1_1_1.add(lblNewLabel_1_1_1_1);
-		
 		
 		JLabel lblDoumYeri_1_1_1 = new JLabel("Tarih ve Saat");
 		lblDoumYeri_1_1_1.setFont(new Font("Tahoma", Font.PLAIN, 15));
@@ -1730,8 +1805,6 @@ public class MainFrame extends JFrame {
 		btnAra_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnAra_1.setBounds(225, 24, 69, 20);
 		panel_5_4_1_1_1.add(btnAra_1);
-		
-	
 		
 		//Randevu Sil Start
 				JButton btnRSSil = new JButton("Randevu Sil");
@@ -1819,11 +1892,8 @@ public class MainFrame extends JFrame {
 		btnRsAlAra.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		btnRsAlAra.setBounds(236, 23, 69, 20);
 		panel_5_4_1.add(btnRsAlAra);
-
-		
 		
 		//Randevu Panel End
-				
 		
 		JButton btnGiris = new JButton("Giriş Yap");
 		btnGiris.addActionListener(new ActionListener() {
@@ -1843,7 +1913,6 @@ public class MainFrame extends JFrame {
 						mm.Unvan= rs.getString("Unvan");
 						String unv=mm.Unvan;
 							if(unv.equals("doktor")) {
-														
 															
 							}
 							else if(unv.equals("personel")) {
@@ -1895,7 +1964,6 @@ public class MainFrame extends JFrame {
 		lblNewLabel_2.setIcon(new ImageIcon("C:\\EclipseProje\\HospitalManagementSystem\\icons\\Saglikbakanligi_logo.png"));
 		lblNewLabel_2.setBounds(116, 42, 308, 300);
 		FotoPanel.add(lblNewLabel_2);
-		
 		
 	}
 }
